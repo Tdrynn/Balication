@@ -5,15 +5,15 @@ import { Colors } from '@/constants/theme';
 
 export default function AppTabs() {
   const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
   return (
     <NativeTabs
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+      labelVisibilityMode='unlabeled'>
+      <NativeTabs.Trigger name="home">
+        <NativeTabs.Trigger.Label hidden/>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/home.png')}
           renderingMode="template"
@@ -21,10 +21,34 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label hidden />
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
+          src={require('@/assets/images/tabIcons/bookmark.png')}
           renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+      
+      <NativeTabs.Trigger name="wishlist">
+        <NativeTabs.Trigger.Label hidden />
+        <NativeTabs.Trigger.Icon
+          src={require('@/assets/images/tabIcons/heart.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+      
+      <NativeTabs.Trigger name="chatbot">
+        <NativeTabs.Trigger.Label hidden />
+        <NativeTabs.Trigger.Icon
+          src={require('@/assets/images/tabIcons/chatbox.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Label hidden />
+        <NativeTabs.Trigger.Icon
+          src={require('@/assets/images/tabIcons/profile.png')}
+          renderingMode='template'
         />
       </NativeTabs.Trigger>
     </NativeTabs>
