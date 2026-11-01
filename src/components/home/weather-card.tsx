@@ -14,15 +14,15 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
 
 /** Kode cuaca WMO (dari Open-Meteo) -> teks Indonesia + ikon. */
 function describe(code: number): { label: string; icon: IconName } {
-    if (code === 0) return { label: 'Cerah', icon: 'sunny' };
-    if (code <= 2) return { label: 'Cerah berawan', icon: 'partly-sunny' };
-    if (code === 3) return { label: 'Berawan', icon: 'cloud' };
-    if (code === 45 || code === 48) return { label: 'Berkabut', icon: 'cloudy' };
-    if (code >= 51 && code <= 57) return { label: 'Gerimis', icon: 'rainy' };
-    if (code >= 61 && code <= 67) return { label: 'Hujan', icon: 'rainy' };
-    if (code >= 80 && code <= 82) return { label: 'Hujan deras', icon: 'rainy' };
-    if (code >= 95) return { label: 'Badai petir', icon: 'thunderstorm' };
-    return { label: 'Berawan', icon: 'cloud' };
+    if (code === 0) return { label: 'Sunny', icon: 'sunny' };
+    if (code <= 2) return { label: 'Partly Sunny', icon: 'partly-sunny' };
+    if (code === 3) return { label: 'Cloudy', icon: 'cloud' };
+    if (code === 45 || code === 48) return { label: 'Claudy', icon: 'cloudy' };
+    if (code >= 51 && code <= 57) return { label: 'drizzling', icon: 'rainy' };
+    if (code >= 61 && code <= 67) return { label: 'Rain', icon: 'rainy' };
+    if (code >= 80 && code <= 82) return { label: 'Heavy Rain', icon: 'rainy' };
+    if (code >= 95) return { label: 'Thunderstorm', icon: 'thunderstorm' };
+    return { label: 'Cloudy', icon: 'cloud' };
 }
 
 const show = (value: number, unit: string) =>
@@ -122,7 +122,7 @@ export function WeatherCard({ weather, regency, auto, onSelect, onLocate }: Prop
 
                 <View style={styles.info}>
                     <View style={styles.titleRow}>
-                        <Text style={styles.title}>Cuaca hari ini</Text>
+                        <Text style={styles.title}>Today's weather</Text>
                         {updated ? (
                             <View style={styles.badge}>
                                 <Text style={styles.badgeText}>Update {updated}</Text>
@@ -131,7 +131,7 @@ export function WeatherCard({ weather, regency, auto, onSelect, onLocate }: Prop
                     </View>
 
                     <Text style={styles.summary}>
-                        {label} • {temperature} • {show(data.humidity, '%')} kelembapan
+                        {label} • {temperature} • {show(data.humidity, '%')} humidity
                     </Text>
 
                     <View style={styles.metrics}>
@@ -141,7 +141,7 @@ export function WeatherCard({ weather, regency, auto, onSelect, onLocate }: Prop
                         </View>
                         <View style={styles.metric}>
                             <Ionicons name="speedometer-outline" size={16} color={HOME.primary} />
-                            <Text style={styles.metricText}>{show(data.windSpeed, ' km/jam')}</Text>
+                            <Text style={styles.metricText}>{show(data.windSpeed, ' km/h')}</Text>
                         </View>
                     </View>
 
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     },
     badgeText: {
         color: HOME.body,
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: '600',
     },
     summary: {

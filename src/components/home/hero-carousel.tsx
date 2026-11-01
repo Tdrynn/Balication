@@ -85,7 +85,7 @@ export function HeroCarousel() {
                 getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
                 renderItem={({ item }) => (
                     <View style={{ width, paddingHorizontal: SIDE }}>
-                        <View style={[styles.card, { height: CARD_HEIGHT }]}>\
+                        <View style={[styles.card, { height: CARD_HEIGHT }]}>
                             <Image
                                 source={item.image}
                                 resizeMode="cover"

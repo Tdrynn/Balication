@@ -34,7 +34,7 @@ export function RegencyPicker({ visible, selectedId, onSelect, onClose }: Props)
 
                 <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
                     <View style={styles.handle} />
-                    <Text style={styles.title}>Pilih kabupaten / kota</Text>
+                    <Text style={styles.title}>Select regency / city</Text>
 
                     <ScrollView showsVerticalScrollIndicator={false}>
                         {REGENCIES.map((regency) => {
