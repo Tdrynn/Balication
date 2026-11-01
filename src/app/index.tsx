@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
@@ -11,7 +12,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 
 import { useOnboarding } from '@/context/onboarding';
 
@@ -21,24 +21,36 @@ const COLORS = {
   body: '#1E6B63',
   button: '#17403E',
   buttonText: '#FFFFFF',
-  mint: '#A6E8DB',
 };
 
-const HERO = require('@/assets/images/hero.png');
-const ILLUSTRATION = require('@/assets/images/illustration.png');
+const HERO = require('@/assets/images/onboarding/hero.png');
+const ILLUSTRATION = require('@/assets/images/onboarding/illustration.png');
 
-const WAVE_HEIGHT = 90;
+const CARD_OVERLAP = 24;
+
+function ratioOf(source: number, fallback: number) {
+  const size = Image.resolveAssetSource(source);
+  const w = size?.width;
+  const h = size?.height;
+  return w && h ? w / h : fallback;
+}
+
+const ILLUSTRATION_ANCHOR: 'top' | 'bottom' = 'top';
+
+const HERO_RATIO = ratioOf(HERO, 1);
+const ILLUSTRATION_RATIO = ratioOf(ILLUSTRATION, 1.7);
 
 export default function OnboardingScreen() {
   const { complete } = useOnboarding();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
-  const heroHeight = height * 0.46;
-  const illustrationHeight = height * 0.27;
-  const cardHeight = 92 + insets.bottom;
+  const compact = height < 720;
 
-  // Animasi
+  const heroHeight = Math.min(width / HERO_RATIO, height * 0.5);
+  const cardHeight = 92 + insets.bottom;
+  const illustrationHeight = width / ILLUSTRATION_RATIO;
+
   const [enter] = useState(() => new Animated.Value(0));
   useEffect(() => {
     Animated.timing(enter, {
@@ -66,43 +78,43 @@ export default function OnboardingScreen() {
     <View style={styles.root}>
       <StatusBar style="light" />
 
-      <View style={{ height: heroHeight }}>
-        <Image source={HERO} resizeMode="cover" style={StyleSheet.absoluteFill} />
-
-        <Svg
-          width={width}
-          height={WAVE_HEIGHT}
-          viewBox="0 0 400 90"
-          preserveAspectRatio="none"
-          style={styles.wave}
-        >
-          <Path
-            d="M0 30 C60 6 110 54 190 44 C270 34 340 -6 400 8 L400 90 L0 90 z"
-            fill={COLORS.mint}
-          />
-          <Path
-            d="M0 46 C70 20 120 78 200 62 C280 46 330 4 400 24 L400 90 L0 90 Z"
-            fill={COLORS.bg}
-          />
-        </Svg>
+      <View style={[styles.hero, { height: heroHeight }]}>
+        <Image
+          source={HERO}
+          resizeMode="stretch"
+          style={{
+            position: 'absolute',
+            left: 0,
+            bottom: 0,
+            width,
+            height: width / HERO_RATIO,
+          }}
+        />
       </View>
 
       <Animated.View style={[styles.textBlock, textStyle]}>
-        <Text style={styles.title}>Discover Bali,{'\n'}Your Way.</Text>
-        <Text style={styles.subtitle}>
-          Discover destinations, activities, and experiences that suit your
+        <Text style={[styles.title, compact && styles.titleCompact]}>
+          Discover Bali,{'\n'}Your Way.
+        </Text>
+        <Text style={[styles.subtitle, compact && styles.subtitleCompact]}>
+          Discover destinations, activities, and {'\n'}experiences that suit your
           vacation style.
         </Text>
       </Animated.View>
 
-      <Image
-        source={ILLUSTRATION}
-        resizeMode="cover"
-        style={[
-          styles.illustration,
-          { width, height: illustrationHeight, bottom: cardHeight - 24 },
-        ]}
-      />
+      <View style={styles.illustrationArea}>
+        <Image
+          source={ILLUSTRATION}
+          resizeMode="stretch"
+          style={{
+            position: 'absolute',
+            left: 0,
+            ...(ILLUSTRATION_ANCHOR === 'top' ? { top: 0 } : { bottom: 0 }),
+            width,
+            height: illustrationHeight,
+          }}
+        />
+      </View>
 
       <View style={[styles.card, { height: cardHeight }]}>
         <Pressable
@@ -110,7 +122,14 @@ export default function OnboardingScreen() {
           onPress={complete}
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
         >
-          <Text style={styles.buttonText}>Get Started</Text>
+          <View style={styles.buttonContent}>
+            <Text style={styles.buttonText}>Get Started </Text>
+            <Ionicons
+              name={'arrow-forward'}
+              size={21}
+              color={COLORS.buttonText}
+            />
+          </View>
         </Pressable>
       </View>
     </View>
@@ -122,14 +141,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.bg,
   },
-  wave: {
-    position: 'absolute',
-    left: 0,
-    bottom: -1,
+  hero: {
+    overflow: 'hidden',
+    flexShrink: 1,
+    maxHeight: 350,
+    opacity: 0.95,
   },
   textBlock: {
     paddingHorizontal: 24,
-    paddingTop: 4,
+    paddingTop: 12,
     gap: 10,
   },
   title: {
@@ -139,21 +159,27 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.3,
   },
+  titleCompact: {
+    fontSize: 26,
+    lineHeight: 33,
+  },
   subtitle: {
     color: COLORS.body,
     fontSize: 15,
     lineHeight: 22,
-    maxWidth: 320,
   },
-  illustration: {
-    position: 'absolute',
-    left: 0,
+  subtitleCompact: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  illustrationArea: {
+    flex: 1,
+    overflow: 'hidden',
+    opacity: 0.7,
   },
   card: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    marginTop: -CARD_OVERLAP,
+    zIndex: 1,
     backgroundColor: COLORS.bg,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -172,13 +198,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
   buttonPressed: {
-    opacity: 0.9,
+    opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
   buttonText: {
     color: COLORS.buttonText,
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
   },
 });

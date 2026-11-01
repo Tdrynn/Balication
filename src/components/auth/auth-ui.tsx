@@ -34,10 +34,10 @@ export const COLORS = {
 const DECORATION = require('@/assets/images/decoration.png');
 
 const DECORATION_SIZE = Image.resolveAssetSource(DECORATION);
+const DECORATION_WIDTH = DECORATION_SIZE?.width ?? 0;
+const DECORATION_HEIGHT = DECORATION_SIZE?.height ?? 0;
 const DECORATION_RATIO =
-    DECORATION_SIZE && DECORATION_SIZE.height > 0
-        ? DECORATION_SIZE.width / DECORATION_SIZE.height
-        : 1.3;
+    DECORATION_HEIGHT > 0 ? DECORATION_WIDTH / DECORATION_HEIGHT : 1.3;
 
 const WAVE_HEIGHT = 60;
 
@@ -88,6 +88,7 @@ export function AuthShell({
                         bottom: 0,
                         width,
                         height: decorationFullHeight,
+                        opacity: 0.8,
                     }}
                 />
                 <Svg
@@ -175,11 +176,11 @@ export function TextField({
                 {icon === 'mail' ? (
                     <Ionicons name="mail-outline" size={26} color={COLORS.primary} />
                 ) : (
-                    <View style={styles.badge}>
+                    <View>
                         <Ionicons
-                            name={icon === 'person' ? 'person' : 'lock-closed'}
-                            size={15}
-                            color="#FFFFFF"
+                            name={icon === 'person' ? 'person-outline' : 'lock-closed-outline'}
+                            size={26}
+                            color={COLORS.primary}
                         />
                     </View>
                 )}
@@ -208,7 +209,7 @@ export function TextField({
                         onPress={() => setHidden((h) => !h)}
                     >
                         <Ionicons
-                            name={hidden ? 'eye-off-outline' : 'eye-outline'}
+                            name={hidden ? 'eye-off-sharp' : 'eye-outline'}
                             size={22}
                             color={COLORS.muted}
                         />
@@ -352,14 +353,6 @@ const styles = StyleSheet.create({
     },
     fieldError: {
         borderColor: COLORS.error,
-    },
-    badge: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: COLORS.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     input: {
         flex: 1,

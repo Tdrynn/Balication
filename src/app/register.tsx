@@ -11,6 +11,7 @@ import {
     TextField,
 } from '@/components/auth/auth-ui';
 import { useAuth } from '@/context/auth';
+import { errorHaptic } from '@/lib/feedback';
 
 type Errors = {
     name?: string;
@@ -42,7 +43,10 @@ export default function RegisterScreen() {
         if (confirm !== password) next.confirm = 'Passwords do not match.';
 
         setErrors(next);
-        if (Object.keys(next).length > 0) return;
+        if (Object.keys(next).length > 0) {
+            errorHaptic();
+            return;
+        }
 
         setSubmitting(true);
         const result = await signUp({
@@ -53,6 +57,7 @@ export default function RegisterScreen() {
 
         // Jika berhasil, layar berpindah otomatis (guard di _layout.tsx).
         if (!result.ok) {
+            errorHaptic();
             setErrors({ form: result.error });
             setSubmitting(false);
         }
