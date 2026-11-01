@@ -74,7 +74,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Beranda',
+          title: 'Home',
           tabBarIcon: ({ focused }) => (
             <TabIcon source={ICONS.home} focused={focused} />
           ),
@@ -82,9 +82,9 @@ export default function AppTabs() {
       />
 
       <Tabs.Screen
-        name="explore"
+        name="Itinerary"
         options={{
-          title: 'Explore',
+          title: 'Itinerary',
           tabBarIcon: ({ focused }) => (
             <TabIcon source={ICONS.explore} focused={focused} />
           ),

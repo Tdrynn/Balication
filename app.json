@@ -1,7 +1,8 @@
+
 {
   "expo": {
-    "name": "PBL5D2",
-    "slug": "PBL5D2",
+    "name": "Balication",
+    "slug": "Balication",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -11,6 +12,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.balication.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
