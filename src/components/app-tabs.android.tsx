@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Image, Pressable, useWindowDimensions ,StyleSheet, type PressableProps } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = {
   card: '#153B3B',
@@ -38,8 +39,10 @@ function TabButton({ style, ...rest }: PressableProps) {
 
 export default function AppTabs() {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const barWidth = width * 0.92;
   const sideGap = (width - barWidth) / 2;
+  const bottomGap = insets.bottom + 16;
 
   return (
     <Tabs
@@ -52,7 +55,7 @@ export default function AppTabs() {
           position: 'absolute',
           width: barWidth,
           marginHorizontal: sideGap,
-          bottom: 70,
+          bottom: bottomGap,
           height: 70,
           backgroundColor: COLORS.card,
           borderTopWidth: 0,
@@ -82,9 +85,9 @@ export default function AppTabs() {
       />
 
       <Tabs.Screen
-        name="Itinerary"
+        name="itinerary"
         options={{
-          title: 'Itinerary',
+          title: 'itinerary',
           tabBarIcon: ({ focused }) => (
             <TabIcon source={ICONS.explore} focused={focused} />
           ),

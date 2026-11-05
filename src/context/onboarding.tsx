@@ -10,7 +10,7 @@ import {
 } from 'react'
 
 // ganti jadi v2 untuk ulang onboarding
-const STORAGE_KEY = 'onboarding_done_v3';
+const STORAGE_KEY = 'onboarding_done_v2';
 
 type OnboardingState = {
     // true setelah status dari penyimpanan selesai dibaca

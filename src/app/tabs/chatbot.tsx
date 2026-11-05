@@ -1,120 +1,341 @@
-import { Platform, SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import { type ComponentRef, useEffect, useRef, useState } from 'react';
+import {
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const COLORS = {
-  background: "#0B1020",
-  card: "#151B30",
-  border: "#262E4A",
-  text: "#F4F6FF",
-  muted: "#8A93B5",
-  accent: "#7C8CFF",
-  accentSoft: "rgba(124, 140, 255, 0.16)",
-};
+import {
+  AiMessage,
+  SuggestionChip,
+  TypingIndicator,
+  UserMessage,
+  type ChatMessage,
+} from '@/components/chat/chat-parts';
+import { HOME, SIDE } from '@/components/home/home-theme';
+import { useAuth } from '@/context/auth';
+import { SUGGESTIONS, askAI } from '@/lib/chat-api';
 
-const PLATFORM_NAME =
-  Platform.OS === "ios"
-    ? "iOS"
-    : Platform.OS === "android"
-      ? "Android"
-      : "Web";
+const LOGO = require('@/assets/images/icon.png');
+const ORNAMENT = require('@/assets/images/decoration.png');
+const ORNAMENT_RATIO = 1.6;
 
-const INFO = [
-  { label: "Nama", value: "Tude" },
-  { label: "Project", value: "PBL5D2" },
-  { label: "Platform", value: `${PLATFORM_NAME} ${Platform.Version}` },
-];
+const GREETING =
+  "Hi! I'm your Balication AI.\nAsk me anything about Bali - from travel recommendations, activities, accommodation, to custom itineraries.\n\nHow can I help you today?";
 
-export default function ChatBotScreen() {
+export default function ChatbotScreen() {
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const { account } = useAuth();
+  const initial = (account?.name ?? 'U').trim().charAt(0).toUpperCase() || 'U';
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    { id: 'greeting', role: 'ai', text: GREETING, time: new Date() },
+  ]);
+  const [input, setInput] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const counter = useRef(0);
+  const alive = useRef(true);
+
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+
+  // Saat keyboard terbuka, navbar tersembunyi, jadi ruang bawah tidak perlu besar
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvent, () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener(hideEvent, () => setKeyboardOpen(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  // Tinggi navbar mengambang (lihat app-tabs.android.tsx): jarak 16 + tinggi 70, ditambah ruang napas.
+  // Ubah angka 98 bila bar Anda berbeda.
+  const bottomSpace = keyboardOpen ? 8 : insets.bottom + 98;
+
+  const source = Image.resolveAssetSource(ORNAMENT);
+  const sw = source?.width;
+  const sh = source?.height;
+  const ornamentRatio = sw && sh ? sw / sh : ORNAMENT_RATIO;
+
+  const hasConversation = messages.some((m) => m.role === 'user');
+
+  const push = (message: Omit<ChatMessage, 'id' | 'time'>) => {
+    counter.current += 1;
+    setMessages((prev) => [
+      ...prev,
+      { ...message, id: `m${counter.current}`, time: new Date() },
+    ]);
+  };
+
+  const send = async (raw?: string) => {
+    const text = (raw ?? input).trim();
+    if (!text || busy) return;
+
+    setInput('');
+    push({ role: 'user', text });
+    setBusy(true);
+
+    try {
+      const reply = await askAI(text);
+      if (alive.current) push({ role: 'ai', text: reply.text, places: reply.places });
+    } catch {
+      if (alive.current) {
+        push({
+          role: 'ai',
+          text: 'Sorry, I could not reach the assistant right now. Please try again in a moment.',
+        });
+      }
+    } finally {
+      if (alive.current) setBusy(false);
+    }
+  };
+
+  const canSend = input.trim().length > 0 && !busy;
+
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
+    <View style={styles.root}>
+      <StatusBar style="dark" />
 
-      <View style={styles.container}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>T</Text>
+      <Image
+        source={ORNAMENT}
+        resizeMode="cover"
+        pointerEvents="none"
+        style={[styles.ornament, { width, height: width / ornamentRatio }]}
+      />
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior="padding"
+        keyboardVerticalOffset={0}
+      >
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+          <Text style={styles.brand}>Chatbot</Text>
         </View>
 
-        <Text style={styles.title}>Halaman Profil</Text>
-        <Text style={styles.subtitle}>
-          Ini halaman baru. Ubah teks ini lalu simpan untuk menguji reload.
-        </Text>
+        {/* Percakapan */}
+        <View style={styles.chatArea}>
+          <ScrollView
+            ref={scrollRef}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.chatContent}
+            onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+          >
+            {messages.map((message) =>
+              message.role === 'ai' ? (
+                <AiMessage key={message.id} message={message} />
+              ) : (
+                <UserMessage key={message.id} message={message} initial={initial} />
+              ),
+            )}
 
-        <View style={styles.card}>
-          {INFO.map((item, index) => (
-            <View
-              key={item.label}
-              style={[styles.row, index > 0 && styles.rowBorder]}
+            {busy ? <TypingIndicator /> : null}
+
+            {/* Pertanyaan bawaan: tampil penuh sebelum percakapan dimulai */}
+            {!hasConversation ? (
+              <View style={styles.chipsWrap}>
+                {SUGGESTIONS.slice(0, 4).map((item) => (
+                  <SuggestionChip
+                    key={item.label}
+                    label={item.label}
+                    icon={item.icon}
+                    onPress={() => send(item.label)}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </ScrollView>
+        </View>
+
+        {/* Pertanyaan bawaan setelah percakapan berjalan */}
+        {hasConversation && !busy ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            style={styles.chipStripScroll}
+            contentContainerStyle={styles.chipStrip}
+          >
+            {SUGGESTIONS.map((item) => (
+              <SuggestionChip
+                key={item.label}
+                label={item.label}
+                icon={item.icon}
+                onPress={() => send(item.label)}
+              />
+            ))}
+          </ScrollView>
+        ) : null}
+
+        {/* Kolom input */}
+        <View style={[styles.inputRow, { paddingBottom: bottomSpace }]}>
+          <View style={styles.inputBox}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Lampirkan gambar"
+              hitSlop={8}
+              // TODO: pilih gambar dengan expo-image-picker
+              onPress={() => { }}
             >
-              <Text style={styles.label}>{item.label}</Text>
-              <Text style={styles.value}>{item.value}</Text>
-            </View>
-          ))}
+              <Ionicons name="image-outline" size={24} color={HOME.primary} />
+            </Pressable>
+            <TextInput
+              value={input}
+              onChangeText={setInput}
+              placeholder="Type your message..."
+              placeholderTextColor={HOME.muted}
+              returnKeyType="send"
+              multiline
+              blurOnSubmit
+              onSubmitEditing={() => send()}
+              style={styles.input}
+            />
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Kirim"
+            disabled={!canSend}
+            onPress={() => send()}
+            style={({ pressed }) => [
+              styles.send,
+              !canSend && styles.sendDisabled,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons name="send" size={22} color="#FFFFFF" style={styles.sendIcon} />
+          </Pressable>
         </View>
-      </View>
-    </SafeAreaView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
+  root: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: HOME.bg,
   },
-  container: {
+  flex: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 48,
-    gap: 16,
   },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: COLORS.accentSoft,
+  ornament: {
+    position: 'absolute',
+    left: 0,
+    bottom: 0,
+    opacity: 0.35,
+  },
+  pressed: {
+    opacity: 0.8,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: SIDE,
+    paddingBottom: 12,
+  },
+  logo: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+  },
+  brand: {
+    color: HOME.title,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  chatArea: {
+    flex: 1,
+    borderRadius: 28,
     borderWidth: 1,
-    borderColor: COLORS.accent,
-    alignItems: "center",
-    justifyContent: "center",
+    minHeight: '65%',
+    borderBottomWidth: 0,
+    borderColor: HOME.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    overflow: 'hidden',
   },
-  avatarText: {
-    color: COLORS.accent,
-    fontSize: 30,
-    fontWeight: "800",
+  chatContent: {
+    paddingTop: 20,
+    paddingBottom: 8,
   },
-  title: {
-    color: COLORS.text,
-    fontSize: 32,
-    fontWeight: "800",
-    letterSpacing: -0.5,
+  chipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: SIDE,
+    marginTop: 2,
   },
-  subtitle: {
-    color: COLORS.muted,
-    fontSize: 16,
-    lineHeight: 24,
+  chipStripScroll: {
+    flexGrow: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
   },
-  card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+  chipStrip: {
+    gap: 8,
+    paddingHorizontal: SIDE,
+    paddingVertical: 8,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: SIDE,
+    paddingTop: 10,
+  },
+  inputBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 52,
     paddingHorizontal: 16,
-    marginTop: 8,
+    borderRadius: 26,
+    borderWidth: 1.5,
+    borderColor: '#9BBFB9',
+    backgroundColor: '#FFFFFF',
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 16,
+  input: {
+    flex: 1,
+    maxHeight: 96,
+    paddingVertical: 10,
+    color: HOME.title,
+    fontSize: 14,
   },
-  rowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+  send: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: HOME.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  label: {
-    color: COLORS.muted,
-    fontSize: 15,
+  sendDisabled: {
+    opacity: 0.45,
   },
-  value: {
-    color: COLORS.text,
-    fontSize: 15,
-    fontWeight: "600",
+  sendIcon: {
+    marginLeft: 2,
   },
 });
