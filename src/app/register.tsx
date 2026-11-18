@@ -12,6 +12,7 @@ import {
 } from '@/components/auth/auth-ui';
 import { useAuth } from '@/context/auth';
 import { errorHaptic } from '@/lib/feedback';
+import { useLanguage } from '@/context/language';
 
 type Errors = {
     name?: string;
@@ -22,6 +23,7 @@ type Errors = {
 };
 
 export default function RegisterScreen() {
+    const { t } = useLanguage();
     const { signUp, setMode } = useAuth();
 
     const [name, setName] = useState('');
@@ -37,10 +39,10 @@ export default function RegisterScreen() {
 
     const onSubmit = async () => {
         const next: Errors = {};
-        if (!name.trim()) next.name = 'Please enter your name.';
-        if (!EMAIL_PATTERN.test(email.trim())) next.email = 'Enter a valid email address.';
-        if (password.length < 8) next.password = 'Use at least 8 characters.';
-        if (confirm !== password) next.confirm = 'Passwords do not match.';
+        if (!name.trim()) next.name = t('auth.error.name');
+        if (!EMAIL_PATTERN.test(email.trim())) next.email = t('auth.error.email');
+        if (password.length < 8) next.password = t('auth.error.password');
+        if (confirm !== password) next.confirm = t('auth.error.confirm');
 
         setErrors(next);
         if (Object.keys(next).length > 0) {
@@ -55,7 +57,6 @@ export default function RegisterScreen() {
             password,
         });
 
-        // Jika berhasil, layar berpindah otomatis (guard di _layout.tsx).
         if (!result.ok) {
             errorHaptic();
             setErrors({ form: result.error });
@@ -66,13 +67,13 @@ export default function RegisterScreen() {
     return (
         <AuthShell hero={require('@/assets/images/register-hero.png')}>
             <Heading
-                title="Join the Journey"
-                subtitle="Create an account to start planning your dream vacation in Bali"
+                title={t('register.title')}
+                subtitle={t('register.subtitle')}
             />
 
             <TextField
                 icon="person"
-                placeholder="Name"
+                placeholder={t('auth.name')}
                 value={name}
                 onChangeText={setName}
                 error={errors.name}
@@ -83,7 +84,7 @@ export default function RegisterScreen() {
             />
             <TextField
                 icon="mail"
-                placeholder="Email"
+                placeholder={t('auth.email')}
                 value={email}
                 onChangeText={setEmail}
                 error={errors.email}
@@ -97,7 +98,7 @@ export default function RegisterScreen() {
             <TextField
                 icon="lock"
                 password
-                placeholder="Password"
+                placeholder={t('auth.password')}
                 value={password}
                 onChangeText={setPassword}
                 error={errors.password}
@@ -110,7 +111,7 @@ export default function RegisterScreen() {
             <TextField
                 icon="lock"
                 password
-                placeholder="Confirm Password"
+                placeholder={t('auth.confirm')}
                 value={confirm}
                 onChangeText={setConfirm}
                 error={errors.confirm}
@@ -123,11 +124,11 @@ export default function RegisterScreen() {
 
             <FormError message={errors.form} />
 
-            <PrimaryButton label="Sign Up" onPress={onSubmit} loading={submitting} />
+            <PrimaryButton label={t('register.button')} onPress={onSubmit} loading={submitting} />
 
             <SwitchLink
-                prefix="Already have an Account?"
-                action="Log in."
+                prefix={t('register.already')}
+                action={t('register.login')}
                 onPress={() => setMode('login')}
             />
         </AuthShell>

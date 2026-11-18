@@ -12,37 +12,35 @@ import {
 } from 'react-native';
 
 import { HOME, SIDE } from './home-theme';
+import { useLanguage } from '@/context/language';
+import { TranslationKey } from '@/lib/translations';
 
-type Slide = { id: string; title: string; image: ImageSourcePropType };
+type Slide = { id: string; titleKey: TranslationKey; image: ImageSourcePropType };
 
-/**
- * Isi carousel. Siapkan 3 gambar di assets/images/home/ (slide-1.jpg, slide-2.jpg, slide-3.jpg).
- * Ukuran yang disarankan: 1080 x 450 px (rasio sekitar 2,4 : 1).
- */
 const SLIDES: Slide[] = [
     {
         id: '1',
-        title: 'Discover the beauty of Bali in your own style',
+        titleKey: 'carousel.1',
         image: require('@/assets/images/home/slide-1.png'),
     },
     {
         id: '2',
-        title: 'Experience the magic of Balinese culture',
+        titleKey: 'carousel.2',
         image: require('@/assets/images/home/slide-2.png'),
     },
     {
         id: '3',
-        title: 'Make every moment an adventure',
+        titleKey: 'carousel.3',
         image: require('@/assets/images/home/slide-3.png'),
     },
     {
         id: '4',
-        title: 'Find your own tropical paradise',
+        titleKey: 'carousel.4',
         image: require('@/assets/images/home/slide-4.png'),
     },
     {
         id: '5',
-        title: 'Relax and enjoy your Bali escape',
+        titleKey: 'carousel.5',
         image: require('@/assets/images/home/slide-5.png'),
     },
 ];
@@ -51,14 +49,13 @@ const CARD_HEIGHT = 150;
 const AUTOPLAY_MS = 4000;
 
 export function HeroCarousel() {
+    const { t } = useLanguage();
     const { width } = useWindowDimensions();
     const cardWidth = width - SIDE * 2;
 
     const listRef = useRef<FlatList<Slide>>(null);
     const [index, setIndex] = useState(0);
 
-    // Geser otomatis. Dihitung ulang setiap indeks berubah, jadi geseran manual
-    // pengguna otomatis mengulang hitung mundurnya.
     useEffect(() => {
         const timer = setInterval(() => {
             const next = (index + 1) % SLIDES.length;
@@ -93,7 +90,7 @@ export function HeroCarousel() {
                             />
                             <View style={[styles.shade, { width: cardWidth, height: CARD_HEIGHT }]} />
                             <View style={styles.titleWrap}>
-                                <Text style={styles.title}>{item.title}</Text>
+                                <Text style={styles.title}>{t(item.titleKey)}</Text>
                             </View>
                         </View>
                     </View>

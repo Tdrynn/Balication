@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding } from '@/context/onboarding';
+import { useLanguage } from '@/context/language';
 
 const COLORS = {
   bg: '#FFFFFF',
@@ -41,6 +42,7 @@ const HERO_RATIO = ratioOf(HERO, 1);
 const ILLUSTRATION_RATIO = ratioOf(ILLUSTRATION, 1.7);
 
 export default function OnboardingScreen() {
+  const { t } = useLanguage();
   const { complete } = useOnboarding();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -94,11 +96,10 @@ export default function OnboardingScreen() {
 
       <Animated.View style={[styles.textBlock, textStyle]}>
         <Text style={[styles.title, compact && styles.titleCompact]}>
-          Discover Bali,{'\n'}Your Way.
+          t('onboarding.title')
         </Text>
         <Text style={[styles.subtitle, compact && styles.subtitleCompact]}>
-          Discover destinations, activities, and {'\n'}experiences that suit your
-          vacation style.
+          t('onboarding.subtitle')
         </Text>
       </Animated.View>
 
@@ -123,7 +124,7 @@ export default function OnboardingScreen() {
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
         >
           <View style={styles.buttonContent}>
-            <Text style={styles.buttonText}>Get Started </Text>
+            <Text style={styles.buttonText}>t('onboarding.button')</Text>
             <Ionicons
               name={'arrow-forward'}
               size={21}

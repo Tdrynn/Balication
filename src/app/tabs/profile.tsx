@@ -1,127 +1,458 @@
-import { SafeAreaView, StatusBar, StyleSheet, Text, View, Platform, Image, Pressable } from "react-native";
-import { useAuth } from "@/context/auth";
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useState, type ComponentProps } from 'react';
+import {
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const COLORS = {
-  background: "#0B1020",
-  card: "#151B30",
-  border: "#262E4A",
-  text: "#F4F6FF",
-  muted: "#8A93B5",
-  accent: "#7C8CFF",
-  accentSoft: "rgba(124, 140, 255, 0.16)",
+import { HOME, SIDE } from '@/components/home/home-theme';
+import { OptionSheet } from '@/components/search/option-sheet';
+import { useAuth } from '@/context/auth';
+import { useLanguage } from '@/context/language';
+import { LANGUAGES, type Language } from '@/lib/translations';
+
+type IconName = ComponentProps<typeof Ionicons>['name'];
+
+const ORNAMENT = require('@/assets/images/decoration.png');
+const ORNAMENT_RATIO = 1.6;
+
+const DANGER = '#EF5B4F';
+const DANGER_SOFT = '#FBD9D5';
+
+type MenuItem = {
+  key: string;
+  title: string;
+  subtitle: string;
+  icon: IconName;
+  danger?: boolean;
 };
 
-const PLATFORM_NAME =
-  Platform.OS === "ios"
-    ? "iOS"
-    : Platform.OS === "android"
-      ? "Android"
-      : "Web";
-
-const INFO = [
-  { label: "Nama", value: "Tude" },
-  { label: "Project", value: "PBL5D2" },
-  { label: "Platform", value: `${PLATFORM_NAME} ${Platform.Version}` },
-];
+function MenuRow({ item, onPress }: { item: MenuItem; onPress: () => void }) {
+  const tint = item.danger ? DANGER : HOME.primary;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      <View style={[styles.rowIcon, { backgroundColor: item.danger ? DANGER_SOFT : '#CFE3DF' }]}>
+        <Ionicons name={item.icon} size={22} color={tint} />
+      </View>
+      <View style={styles.rowText}>
+        <Text style={styles.rowTitle}>{item.title}</Text>
+        <Text style={styles.rowSub} numberOfLines={1}>
+          {item.subtitle}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={HOME.muted} />
+    </Pressable>
+  );
+}
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { account, signOut } = useAuth();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const { t, language, setLanguage } = useLanguage();
+  const router = useRouter();
+
+  // Teks menu dibuat di dalam komponen supaya ikut berganti saat bahasa diubah
+  const currentLanguage = LANGUAGES.find((l) => l.code === language)?.label ?? '';
+  const menu: MenuItem[] = [
+    {
+      key: 'account',
+      title: t('profile.account'),
+      subtitle: t('profile.account.sub'),
+      icon: 'person',
+    },
+    {
+      key: 'notifications',
+      title: t('profile.notifications'),
+      subtitle: t('profile.notifications.sub'),
+      icon: 'notifications',
+    },
+    {
+      key: 'chat',
+      title: t('profile.chat'),
+      subtitle: t('profile.chat.sub'),
+      icon: 'chatbubble-ellipses',
+    },
+    {
+      key: 'preferences',
+      title: t('profile.preferences'),
+      subtitle: t('profile.preferences.sub'),
+      icon: 'compass',
+    },
+    {
+      key: 'language',
+      title: t('profile.language'),
+      subtitle: currentLanguage,
+      icon: 'language',
+    },
+    {
+      key: 'logout',
+      title: t('profile.logout'),
+      subtitle: t('profile.logout.sub'),
+      icon: 'log-out',
+      danger: true,
+    },
+  ];
+
+  const name = account?.name?.trim() || 'Traveler';
+  const initial = name.charAt(0).toUpperCase();
+
+  // Ornamen selebar layar; tinggi dari rasio gambar agar tidak ter-zoom
+  const source = Image.resolveAssetSource(ORNAMENT);
+  const sw = source?.width;
+  const sh = source?.height;
+  const ratio = sw && sh ? sw / sh : ORNAMENT_RATIO;
+
+  const onMenu = (key: string) => {
+    if (key === 'logout') {
+      setConfirmOpen(true);
+      return;
+    }
+    if (key === 'preferences') {
+      router.push('/edit-preferences');
+      return;
+    }
+    if (key === 'language') {
+      setLanguageOpen(true);
+      return;
+    }
+    // TODO: buka halaman Account Information, Notifications, dan Chat Preferences
+  };
+
+  const confirmLogout = async () => {
+    setConfirmOpen(false);
+    await signOut();
+  };
+
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
+    <View style={styles.root}>
+      <StatusBar style="dark" />
 
-      <View style={styles.container}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>T</Text>
+      {/* Ornamen latar, tidak bisa disentuh */}
+      <Image
+        source={ORNAMENT}
+        resizeMode="cover"
+        pointerEvents="none"
+        style={[styles.ornament, { width, height: width / ratio }]}
+      />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        // flexGrow: 1 membuat isi setidaknya setinggi layar, sehingga bagian tengah bisa memusatkan kartu
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top + 12,
+          paddingBottom: 130,
+        }}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>{t('profile.title')}</Text>
         </View>
 
-        <Text style={styles.title}>Halaman Profil</Text>
-        <Text style={styles.subtitle}>
-          Ini halaman baru. Ubah teks ini lalu simpan untuk menguji reload.
-        </Text>
-
-        <View style={styles.card}>
-          {INFO.map((item, index) => (
-            <View
-              key={item.label}
-              style={[styles.row, index > 0 && styles.rowBorder]}
-            >
-              <Text style={styles.label}>{item.label}</Text>
-              <Text style={styles.value}>{item.value}</Text>
+        {/* Sisa ruang di bawah header: kartu dipusatkan secara vertikal di sini */}
+        <View style={styles.center}>
+          <View style={styles.card}>
+            <View style={styles.avatarWrap}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{initial}</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Ubah foto profil"
+                // TODO: pilih foto dengan expo-image-picker
+                onPress={() => { }}
+                style={styles.editBadge}
+              >
+                <Ionicons name="pencil" size={12} color="#FFFFFF" />
+              </Pressable>
             </View>
-          ))}
-        </View>
 
-        <Text>{account?.name}</Text>
-        <Pressable onPress={signOut}>
-          <Text>Sign Out</Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
+            <Text style={styles.name}>{name}</Text>
+            {account?.email ? <Text style={styles.email}>{account.email}</Text> : null}
+
+            <View style={styles.menu}>
+              {menu.map((item) => (
+                <MenuRow key={item.key} item={item} onPress={() => onMenu(item.key)} />
+              ))}
+            </View>
+          </View>
+
+          <Text style={styles.platform}>
+            Balication • {Platform.OS === 'ios' ? 'iOS' : 'Android'} {String(Platform.Version)}
+          </Text>
+        </View>
+      </ScrollView>
+
+      {/* Konfirmasi keluar */}
+      <Modal
+        visible={confirmOpen}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setConfirmOpen(false)}
+      >
+        <View style={styles.overlay}>
+          <Pressable
+            accessibilityLabel="Tutup"
+            style={StyleSheet.absoluteFill}
+            onPress={() => setConfirmOpen(false)}
+          />
+          <View style={styles.dialog}>
+            <View style={styles.dialogIcon}>
+              <Ionicons name="log-out" size={46} color="#FFFFFF" />
+            </View>
+            <Text style={styles.dialogTitle}>{t('logout.title')}</Text>
+            <Text style={styles.dialogText}>{t('logout.message')}</Text>
+
+            <View style={styles.dialogButtons}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setConfirmOpen(false)}
+                style={({ pressed }) => [styles.dialogButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.dialogButtonText}>{t('common.cancel')}</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={confirmLogout}
+                style={({ pressed }) => [
+                  styles.dialogButton,
+                  styles.dialogButtonDanger,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={[styles.dialogButtonText, styles.dialogButtonDangerText]}>
+                  {t('profile.logout')}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Pilihan bahasa */}
+      <OptionSheet
+        visible={languageOpen}
+        title={t('language.sheetTitle')}
+        options={LANGUAGES.map((l) => ({ id: l.code, label: l.label }))}
+        selectedId={language}
+        onSelect={(code) => setLanguage(code as Language)}
+        onClose={() => setLanguageOpen(false)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
+  root: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: HOME.bg,
   },
-  container: {
+  ornament: {
+    position: 'absolute',
+    left: 0,
+    bottom: 0,
+    opacity: 0.35,
+  },
+  pressed: {
+    opacity: 0.75,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: SIDE,
+    marginBottom: 14,
+  },
+  logo: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+  },
+  headerTitle: {
+    color: HOME.title,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  center: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 48,
-    gap: 16,
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: COLORS.accentSoft,
-    borderWidth: 1,
-    borderColor: COLORS.accent,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    color: COLORS.accent,
-    fontSize: 30,
-    fontWeight: "800",
-  },
-  title: {
-    color: COLORS.text,
-    fontSize: 32,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    color: COLORS.muted,
-    fontSize: 16,
-    lineHeight: 24,
+    justifyContent: 'center',
   },
   card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    marginHorizontal: SIDE,
     paddingHorizontal: 16,
-    marginTop: 8,
+    paddingTop: 24,
+    paddingBottom: 20,
+    alignItems: 'center',
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: HOME.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+  },
+  avatarWrap: {
+    marginBottom: 10,
+  },
+  avatar: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: HOME.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: '#DCEAE7',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '800',
+  },
+  editBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: HOME.dark,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  name: {
+    color: HOME.title,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  email: {
+    color: HOME.muted,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  menu: {
+    alignSelf: 'stretch',
+    gap: 12,
+    marginTop: 22,
   },
   row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingLeft: 10,
+    paddingRight: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: HOME.border,
+    backgroundColor: '#FFFFFF',
   },
-  rowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+  rowIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  label: {
-    color: COLORS.muted,
+  rowText: {
+    flex: 1,
+    gap: 1,
+  },
+  rowTitle: {
+    color: HOME.title,
     fontSize: 15,
+    fontWeight: '800',
   },
-  value: {
-    color: COLORS.text,
-    fontSize: 15,
-    fontWeight: "600",
+  rowSub: {
+    color: HOME.muted,
+    fontSize: 11,
+  },
+  platform: {
+    marginTop: 18,
+    textAlign: 'center',
+    color: HOME.muted,
+    fontSize: 11,
+  },
+  overlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  dialog: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 26,
+    paddingBottom: 22,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+  },
+  dialogIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: DANGER,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialogTitle: {
+    marginTop: 14,
+    color: HOME.title,
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  dialogText: {
+    marginTop: 8,
+    color: HOME.muted,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+  dialogButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 22,
+    alignSelf: 'stretch',
+  },
+  dialogButton: {
+    flex: 1,
+    height: 46,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: HOME.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  dialogButtonDanger: {
+    backgroundColor: DANGER,
+    borderColor: DANGER,
+  },
+  dialogButtonText: {
+    color: HOME.title,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  dialogButtonDangerText: {
+    color: '#FFFFFF',
   },
 });

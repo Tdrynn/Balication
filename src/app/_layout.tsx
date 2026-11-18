@@ -1,28 +1,34 @@
 import { Stack } from 'expo-router';
 import { useState } from 'react';
+import { useFonts } from 'expo-font';
+import { BRAND_FONTS } from '@/components/brand-name';
 
 import AnimatedSplash from '@/components/animated-splash';
 import { AuthProvider, useAuth } from '@/context/auth';
+import { LanguageProvider, useLanguage } from '@/context/language';
 import { OnboardingProvider, useOnboarding } from '@/context/onboarding';
+import { PreferencesProvider, usePreferences } from '@/context/preferences';
 
 function RootNavigator() {
   const onboarding = useOnboarding();
   const auth = useAuth();
+  const preferences = usePreferences();
+  const language = useLanguage();
   const [showSplash, setShowSplash] = useState(true);
+  const [fontsLoaded] = useFonts(BRAND_FONTS);
 
-  const ready = onboarding.loaded && auth.loaded;
+  const ready = onboarding.loaded && auth.loaded && preferences.loaded && language.loaded && fontsLoaded;
   const needsAuth = onboarding.done && !auth.signedIn;
+  const signedIn = onboarding.done && auth.signedIn;
 
   return (
     <>
       {ready && (
         <Stack screenOptions={{ headerShown: false }}>
-          {/* 1. Pemakaian pertama: onboarding */}
           <Stack.Protected guard={!onboarding.done}>
             <Stack.Screen name="index" />
           </Stack.Protected>
 
-          {/* 2. Belum login: Register (belum punya akun) atau Login (sudah punya akun) */}
           <Stack.Protected guard={needsAuth && auth.mode === 'register'}>
             <Stack.Screen name="register" options={{ animation: 'fade' }} />
           </Stack.Protected>
@@ -30,9 +36,17 @@ function RootNavigator() {
             <Stack.Screen name="login" options={{ animation: 'fade' }} />
           </Stack.Protected>
 
-          {/* 3. Sudah login: aplikasi utama */}
-          <Stack.Protected guard={onboarding.done && auth.signedIn}>
+          {/* Sudah masuk, tetapi akun ini belum memilih preferensi: tampil sekali */}
+          <Stack.Protected guard={signedIn && !preferences.done}>
+            <Stack.Screen name="preferences" options={{ animation: 'fade' }} />
+          </Stack.Protected>
+
+          {/* Aplikasi utama */}
+          <Stack.Protected guard={signedIn && preferences.done}>
             <Stack.Screen name="tabs" options={{ animation: 'fade' }} />
+            <Stack.Screen name="search" />
+            <Stack.Screen name="destination/[id]" />
+            <Stack.Screen name="edit-preferences" />
           </Stack.Protected>
         </Stack>
       )}
@@ -44,10 +58,14 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <OnboardingProvider>
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
-    </OnboardingProvider>
+    <LanguageProvider>
+      <OnboardingProvider>
+        <AuthProvider>
+          <PreferencesProvider>
+            <RootNavigator />
+          </PreferencesProvider>
+        </AuthProvider>
+      </OnboardingProvider>
+    </LanguageProvider>
   );
 }
