@@ -9,17 +9,12 @@ import {
     type ReactNode,
 } from 'react'
 
-// ganti jadi v2 untuk ulang onboarding
 const STORAGE_KEY = 'onboarding_done_v2';
 
 type OnboardingState = {
-    // true setelah status dari penyimpanan selesai dibaca
     loaded: boolean;
-    // true juka pengguna sudah menyelesaikan onboarding
     done: boolean;
-    // untuk tombol Get Started
     complete: () => Promise<void>;
-    // untuk reset onboarding
     reset: () => Promise<void>;
 };
 
@@ -36,7 +31,7 @@ export function OnboardingProvider({ children }: {children: ReactNode}) {
             if (active) setDone(value === 'true');
         })
         .catch(() => {
-            // Gagal membaca: tampilkan onboarding
+            
         })
         .finally(() => {
             if (active) setLoaded(true);
@@ -52,7 +47,7 @@ export function OnboardingProvider({ children }: {children: ReactNode}) {
         try {
             await AsyncStorage.setItem(STORAGE_KEY, 'true');
         } catch {
-            // Onboarding hanya akan muncul lagi di peluncuran berikutnya
+
         }
     }, []);
 
@@ -60,7 +55,7 @@ export function OnboardingProvider({ children }: {children: ReactNode}) {
         try {
             await AsyncStorage.removeItem(STORAGE_KEY);
         } catch {
-            // abaikan
+            
         }
         setDone(false);
     }, []);

@@ -13,6 +13,7 @@ import {
 } from '@/components/auth/auth-ui';
 import { useAuth } from '@/context/auth';
 import { errorHaptic } from '@/lib/feedback';
+import { useLanguage } from '@/context/language';
 
 type Errors = {
     email?: string;
@@ -21,6 +22,7 @@ type Errors = {
 };
 
 export default function LoginScreen() {
+    const { t } = useLanguage();
     const { signIn, setMode } = useAuth();
 
     const [email, setEmail] = useState('');
@@ -32,8 +34,8 @@ export default function LoginScreen() {
 
     const onSubmit = async () => {
         const next: Errors = {};
-        if (!EMAIL_PATTERN.test(email.trim())) next.email = 'Enter a valid email address.';
-        if (!password) next.password = 'Please enter your password.';
+        if (!EMAIL_PATTERN.test(email.trim())) next.email = t('auth.error.email');
+        if (!password) next.password = t('auth.error.empty');
 
         setErrors(next);
         if (Object.keys(next).length > 0) {
@@ -44,7 +46,6 @@ export default function LoginScreen() {
         setSubmitting(true);
         const result = await signIn({ email: email.trim(), password });
 
-        // Jika berhasil, layar berpindah otomatis (guard di _layout.tsx).
         if (!result.ok) {
             errorHaptic();
             setErrors({ form: result.error });
@@ -55,13 +56,13 @@ export default function LoginScreen() {
     return (
         <AuthShell hero={require('@/assets/images/login-hero.png')}>
             <Heading
-                title="Welcome!!"
-                subtitle="Log in to continue your vacation"
+                title={t('login.title')}
+                subtitle={t('login.subtitle')}
             />
 
             <TextField
                 icon="mail"
-                placeholder="Email"
+                placeholder={t('auth.email')}
                 value={email}
                 onChangeText={setEmail}
                 error={errors.email}
@@ -74,7 +75,7 @@ export default function LoginScreen() {
             <TextField
                 icon="lock"
                 password
-                placeholder="Password"
+                placeholder={t('auth.password')}
                 value={password}
                 onChangeText={setPassword}
                 error={errors.password}
@@ -94,17 +95,17 @@ export default function LoginScreen() {
                         Alert.alert('Forgot Password', 'Reset password belum dihubungkan.')
                     }
                 >
-                    <Text style={styles.forgotText}>Forgot Password?</Text>
+                    <Text style={styles.forgotText}>{t('login.forgot')}</Text>
                 </Pressable>
             </View>
 
             <FormError message={errors.form} />
 
-            <PrimaryButton label="Login" onPress={onSubmit} loading={submitting} />
+            <PrimaryButton label={t('login.login')} onPress={onSubmit} loading={submitting} />
 
             <SwitchLink
-                prefix="Don't have an account?"
-                action="Sign Up."
+                prefix={t('login.dont')}
+                action={t('login.sign')}
                 onPress={() => setMode('register')}
             />
         </AuthShell>

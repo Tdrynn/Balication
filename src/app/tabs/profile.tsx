@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState, type ComponentProps } from 'react';
 import {
   Image,
-  ImageSourcePropType,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,7 +16,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HOME, SIDE } from '@/components/home/home-theme';
+import { OptionSheet } from '@/components/search/option-sheet';
 import { useAuth } from '@/context/auth';
+import { useLanguage } from '@/context/language';
+import { LANGUAGES, type Language } from '@/lib/translations';
+
+type IconName = ComponentProps<typeof Ionicons>['name'];
 
 const ORNAMENT = require('@/assets/images/decoration.png');
 const ORNAMENT_RATIO = 1.6;
@@ -27,37 +33,9 @@ type MenuItem = {
   key: string;
   title: string;
   subtitle: string;
-  icon: ImageSourcePropType;
+  icon: IconName;
   danger?: boolean;
 };
-
-const MENU: MenuItem[] = [
-  {
-    key: 'account',
-    title: 'Account Information',
-    subtitle: 'View and edit your personal information',
-    icon: require('@/assets/images/tabIcons/profile.png'),
-  },
-  {
-    key: 'notifications',
-    title: 'Notifications',
-    subtitle: 'Manage your notifications setting',
-    icon: require('@/assets/images/tabIcons/bell.png'),
-  },
-  {
-    key: 'chat',
-    title: 'Chat Preferences',
-    subtitle: 'Customize your AI assistant',
-    icon: require('@/assets/images/tabIcons/chatbox.png'),
-  },
-  {
-    key: 'logout',
-    title: 'Log out',
-    subtitle: 'Sign out from your account',
-    icon: require('@/assets/images/tabIcons/logout.png'),
-    danger: true,
-  },
-];
 
 function MenuRow({ item, onPress }: { item: MenuItem; onPress: () => void }) {
   const tint = item.danger ? DANGER : HOME.primary;
@@ -68,7 +46,7 @@ function MenuRow({ item, onPress }: { item: MenuItem; onPress: () => void }) {
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <View style={[styles.rowIcon, { backgroundColor: item.danger ? DANGER_SOFT : '#CFE3DF' }]}>
-        <Image source={item.icon} style={{ width: 22, height: 22, tintColor: tint }} />
+        <Ionicons name={item.icon} size={22} color={tint} />
       </View>
       <View style={styles.rowText}>
         <Text style={styles.rowTitle}>{item.title}</Text>
@@ -86,10 +64,56 @@ export default function ProfileScreen() {
   const { width } = useWindowDimensions();
   const { account, signOut } = useAuth();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const { t, language, setLanguage } = useLanguage();
+  const router = useRouter();
+
+  // Teks menu dibuat di dalam komponen supaya ikut berganti saat bahasa diubah
+  const currentLanguage = LANGUAGES.find((l) => l.code === language)?.label ?? '';
+  const menu: MenuItem[] = [
+    {
+      key: 'account',
+      title: t('profile.account'),
+      subtitle: t('profile.account.sub'),
+      icon: 'person',
+    },
+    {
+      key: 'notifications',
+      title: t('profile.notifications'),
+      subtitle: t('profile.notifications.sub'),
+      icon: 'notifications',
+    },
+    {
+      key: 'chat',
+      title: t('profile.chat'),
+      subtitle: t('profile.chat.sub'),
+      icon: 'chatbubble-ellipses',
+    },
+    {
+      key: 'preferences',
+      title: t('profile.preferences'),
+      subtitle: t('profile.preferences.sub'),
+      icon: 'compass',
+    },
+    {
+      key: 'language',
+      title: t('profile.language'),
+      subtitle: currentLanguage,
+      icon: 'language',
+    },
+    {
+      key: 'logout',
+      title: t('profile.logout'),
+      subtitle: t('profile.logout.sub'),
+      icon: 'log-out',
+      danger: true,
+    },
+  ];
 
   const name = account?.name?.trim() || 'Traveler';
   const initial = name.charAt(0).toUpperCase();
 
+  // Ornamen selebar layar; tinggi dari rasio gambar agar tidak ter-zoom
   const source = Image.resolveAssetSource(ORNAMENT);
   const sw = source?.width;
   const sh = source?.height;
@@ -98,6 +122,14 @@ export default function ProfileScreen() {
   const onMenu = (key: string) => {
     if (key === 'logout') {
       setConfirmOpen(true);
+      return;
+    }
+    if (key === 'preferences') {
+      router.push('/edit-preferences');
+      return;
+    }
+    if (key === 'language') {
+      setLanguageOpen(true);
       return;
     }
     // TODO: buka halaman Account Information, Notifications, dan Chat Preferences
@@ -112,6 +144,7 @@ export default function ProfileScreen() {
     <View style={styles.root}>
       <StatusBar style="dark" />
 
+      {/* Ornamen latar, tidak bisa disentuh */}
       <Image
         source={ORNAMENT}
         resizeMode="cover"
@@ -121,48 +154,53 @@ export default function ProfileScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-
+        // flexGrow: 1 membuat isi setidaknya setinggi layar, sehingga bagian tengah bisa memusatkan kartu
         contentContainerStyle={{
           flexGrow: 1,
           paddingTop: insets.top + 12,
           paddingBottom: 130,
         }}
       >
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profil & Setting</Text>
+          <Text style={styles.headerTitle}>{t('profile.title')}</Text>
         </View>
 
+        {/* Sisa ruang di bawah header: kartu dipusatkan secara vertikal di sini */}
         <View style={styles.center}>
-        <View style={styles.card}>
-          <View style={styles.avatarWrap}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initial}</Text>
+          <View style={styles.card}>
+            <View style={styles.avatarWrap}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{initial}</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Ubah foto profil"
+                // TODO: pilih foto dengan expo-image-picker
+                onPress={() => { }}
+                style={styles.editBadge}
+              >
+                <Ionicons name="pencil" size={12} color="#FFFFFF" />
+              </Pressable>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Ubah foto profil"
-              onPress={() => {}}
-              style={styles.editBadge}
-            >
-              <Ionicons name="pencil" size={20} color="#FFFFFF" />
-            </Pressable>
+
+            <Text style={styles.name}>{name}</Text>
+            {account?.email ? <Text style={styles.email}>{account.email}</Text> : null}
+
+            <View style={styles.menu}>
+              {menu.map((item) => (
+                <MenuRow key={item.key} item={item} onPress={() => onMenu(item.key)} />
+              ))}
+            </View>
           </View>
 
-          <Text style={styles.name}>{name}</Text>
-
-          <View style={styles.menu}>
-            {MENU.map((item) => (
-              <MenuRow key={item.key} item={item} onPress={() => onMenu(item.key)} />
-            ))}
-          </View>
-        </View>
-
-        <Text style={styles.platform}>
-          Balication • version 1.0.0 • Made with <Ionicons name="heart" />
-        </Text>
+          <Text style={styles.platform}>
+            Balication • {Platform.OS === 'ios' ? 'iOS' : 'Android'} {String(Platform.Version)}
+          </Text>
         </View>
       </ScrollView>
 
+      {/* Konfirmasi keluar */}
       <Modal
         visible={confirmOpen}
         transparent
@@ -178,10 +216,10 @@ export default function ProfileScreen() {
           />
           <View style={styles.dialog}>
             <View style={styles.dialogIcon}>
-              <Image source={require('@/assets/images/tabIcons/logout.png')} style={{ width: 46, height: 46, tintColor: '#FFFFFF' }} />
+              <Ionicons name="log-out" size={46} color="#FFFFFF" />
             </View>
-            <Text style={styles.dialogTitle}>Log out?</Text>
-            <Text style={styles.dialogText}>Are you sure you want to log out of your account?</Text>
+            <Text style={styles.dialogTitle}>{t('logout.title')}</Text>
+            <Text style={styles.dialogText}>{t('logout.message')}</Text>
 
             <View style={styles.dialogButtons}>
               <Pressable
@@ -189,7 +227,7 @@ export default function ProfileScreen() {
                 onPress={() => setConfirmOpen(false)}
                 style={({ pressed }) => [styles.dialogButton, pressed && styles.pressed]}
               >
-                <Text style={styles.dialogButtonText}>Cancel</Text>
+                <Text style={styles.dialogButtonText}>{t('common.cancel')}</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -201,13 +239,23 @@ export default function ProfileScreen() {
                 ]}
               >
                 <Text style={[styles.dialogButtonText, styles.dialogButtonDangerText]}>
-                  Log out
+                  {t('profile.logout')}
                 </Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
+
+      {/* Pilihan bahasa */}
+      <OptionSheet
+        visible={languageOpen}
+        title={t('language.sheetTitle')}
+        options={LANGUAGES.map((l) => ({ id: l.code, label: l.label }))}
+        selectedId={language}
+        onSelect={(code) => setLanguage(code as Language)}
+        onClose={() => setLanguageOpen(false)}
+      />
     </View>
   );
 }
@@ -221,7 +269,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     bottom: 0,
-    opacity: 0.75,
+    opacity: 0.35,
   },
   pressed: {
     opacity: 0.75,
@@ -262,9 +310,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 78,
+    height: 78,
+    borderRadius: 39,
     backgroundColor: HOME.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -278,11 +326,11 @@ const styles = StyleSheet.create({
   },
   editBadge: {
     position: 'absolute',
-    right: 5,
-    bottom: 5,
-    width: 35,
-    height: 35,
-    borderRadius: 30,
+    right: -2,
+    bottom: -2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: HOME.dark,
     borderWidth: 2,
     borderColor: '#FFFFFF',
@@ -293,6 +341,11 @@ const styles = StyleSheet.create({
     color: HOME.title,
     fontSize: 22,
     fontWeight: '800',
+  },
+  email: {
+    color: HOME.muted,
+    fontSize: 13,
+    marginTop: 2,
   },
   menu: {
     alignSelf: 'stretch',

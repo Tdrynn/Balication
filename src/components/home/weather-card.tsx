@@ -2,33 +2,35 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useLanguage } from '@/context/language';
 import type { LocateResult } from '@/hooks/use-regency';
 import type { Remote } from '@/hooks/use-remote';
 import type { Weather } from '@/lib/api';
+import { regencyLabel } from '@/lib/regency-label';
 import type { Regency } from '@/lib/regencies';
+import type { TranslationKey } from '@/lib/translations';
 
 import { HOME, SIDE } from './home-theme';
 import { RegencyPicker } from './regency-picker';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
-/** Kode cuaca WMO (dari Open-Meteo) -> teks Indonesia + ikon. */
-function describe(code: number): { label: string; icon: IconName } {
-    if (code === 0) return { label: 'Sunny', icon: 'sunny' };
-    if (code <= 2) return { label: 'Partly Sunny', icon: 'partly-sunny' };
-    if (code === 3) return { label: 'Cloudy', icon: 'cloud' };
-    if (code === 45 || code === 48) return { label: 'Claudy', icon: 'cloudy' };
-    if (code >= 51 && code <= 57) return { label: 'drizzling', icon: 'rainy' };
-    if (code >= 61 && code <= 67) return { label: 'Rain', icon: 'rainy' };
-    if (code >= 80 && code <= 82) return { label: 'Heavy Rain', icon: 'rainy' };
-    if (code >= 95) return { label: 'Thunderstorm', icon: 'thunderstorm' };
-    return { label: 'Cloudy', icon: 'cloud' };
+/** Kode cuaca WMO -> kunci terjemahan + ikon. Teksnya diterjemahkan saat ditampilkan. */
+function describe(code: number): { labelKey: TranslationKey; icon: IconName } {
+    if (code === 0) return { labelKey: 'weather.sunny', icon: 'sunny' };
+    if (code <= 2) return { labelKey: 'weather.partlySunny', icon: 'partly-sunny' };
+    if (code === 3) return { labelKey: 'weather.cloudy', icon: 'cloud' };
+    if (code === 45 || code === 48) return { labelKey: 'weather.foggy', icon: 'cloudy' };
+    if (code >= 51 && code <= 57) return { labelKey: 'weather.drizzle', icon: 'rainy' };
+    if (code >= 61 && code <= 67) return { labelKey: 'weather.rain', icon: 'rainy' };
+    if (code >= 80 && code <= 82) return { labelKey: 'weather.heavyRain', icon: 'rainy' };
+    if (code >= 95) return { labelKey: 'weather.thunderstorm', icon: 'thunderstorm' };
+    return { labelKey: 'weather.cloudy', icon: 'cloud' };
 }
 
 const show = (value: number, unit: string) =>
     Number.isFinite(value) ? `${Math.round(value)}${unit}` : '-';
 
-/** Tombol kecil untuk mengganti kabupaten. */
 function RegencyChip({
     name,
     auto,
@@ -38,15 +40,16 @@ function RegencyChip({
     auto: boolean;
     onPress: () => void;
 }) {
+    const { t } = useLanguage();
+
     return (
         <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Ganti lokasi cuaca, sekarang ${name}`}
+            accessibilityLabel={t('weather.changeLocation', { name })}
             hitSlop={6}
             onPress={onPress}
             style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
         >
-            {/* Ikon panah = mengikuti lokasi pengguna, pin = dipilih manual */}
             <Ionicons name={auto ? 'navigate' : 'location'} size={13} color={HOME.primary} />
             <Text style={styles.chipText} numberOfLines={1}>
                 {name}
@@ -59,18 +62,18 @@ function RegencyChip({
 type Props = {
     weather: Remote<Weather>;
     regency: Regency;
-    /** true jika cuaca mengikuti lokasi pengguna */
     auto: boolean;
     onSelect: (id: string) => void;
     onLocate: () => Promise<LocateResult>;
 };
 
 export function WeatherCard({ weather, regency, auto, onSelect, onLocate }: Props) {
+    const { t } = useLanguage();
     const [pickerOpen, setPickerOpen] = useState(false);
     const { data, loading, error, reload } = weather;
 
-    // Data yang tampil harus milik kabupaten yang sedang dipilih
     const ready = data !== null && data.regencyId === regency.id;
+    const placeName = regencyLabel(regency, t);
 
     const picker = (
         <RegencyPicker
@@ -83,8 +86,14 @@ export function WeatherCard({ weather, regency, auto, onSelect, onLocate }: Prop
         />
     );
 
-    // Belum ada data untuk kabupaten ini: memuat atau gagal
     if (!ready) {
+        // Pesan error teknis dari API tidak diterjemahkan: tampilkan pesan umum yang
+        // mengikuti bahasa aplikasi, dan sertakan pesan aslinya hanya saat pengembangan.
+        const message =
+            __DEV__ && error
+                ? `${t('weather.unavailable')} (${error})`
+                : t('weather.unavailable');
+
         return (
             <>
                 <View style={[styles.card, styles.center]}>
@@ -92,21 +101,25 @@ export function WeatherCard({ weather, regency, auto, onSelect, onLocate }: Prop
                         <ActivityIndicator color={HOME.primary} />
                     ) : (
                         <>
-                            <Text style={styles.errorText}>{error ?? 'Cuaca belum tersedia'}</Text>
+                            <Text style={styles.errorText}>{message}</Text>
                             <Pressable onPress={reload} hitSlop={8} accessibilityRole="button">
-                                <Text style={styles.retry}>Coba lagi</Text>
+                                <Text style={styles.retry}>{t('weather.retry')}</Text>
                             </Pressable>
                         </>
                     )}
-                    <RegencyChip name={regency.label} auto={auto} onPress={() => setPickerOpen(true)} />
+                    <RegencyChip name={placeName} auto={auto} onPress={() => setPickerOpen(true)} />
                 </View>
                 {picker}
             </>
         );
     }
 
-    const { label, icon } = describe(data.code);
+    const { labelKey, icon } = describe(data.code);
     const temperature = show(data.temperature, '°');
+    const humidity = show(data.humidity, '%');
+    const wind = Number.isFinite(data.windSpeed)
+        ? t('weather.wind', { value: Math.round(data.windSpeed) })
+        : '-';
     const updated = data.time.slice(11, 16); // "HH:mm"
 
     return (
@@ -122,32 +135,37 @@ export function WeatherCard({ weather, regency, auto, onSelect, onLocate }: Prop
 
                 <View style={styles.info}>
                     <View style={styles.titleRow}>
-                        <Text style={styles.title}>Today's weather</Text>
+                        <Text style={styles.title}>{t('weather.title')}</Text>
                         {updated ? (
                             <View style={styles.badge}>
-                                <Text style={styles.badgeText}>Update {updated}</Text>
+                                <Text style={styles.badgeText}>
+                                    {t('weather.updated', { time: updated })}
+                                </Text>
                             </View>
                         ) : null}
                     </View>
 
                     <Text style={styles.summary}>
-                        {label} • {temperature} • {show(data.humidity, '%')} humidity
+                        {t('weather.summary', {
+                            label: t(labelKey),
+                            temp: temperature,
+                            humidity,
+                        })}
                     </Text>
 
                     <View style={styles.metrics}>
                         <View style={styles.metric}>
                             <Ionicons name="water-outline" size={16} color={HOME.primary} />
-                            <Text style={styles.metricText}>{show(data.humidity, '%')}</Text>
+                            <Text style={styles.metricText}>{humidity}</Text>
                         </View>
                         <View style={styles.metric}>
                             <Ionicons name="speedometer-outline" size={16} color={HOME.primary} />
-                            <Text style={styles.metricText}>{show(data.windSpeed, ' km/h')}</Text>
+                            <Text style={styles.metricText}>{wind}</Text>
                         </View>
                     </View>
 
                     <View style={styles.footer}>
-                        <RegencyChip name={regency.label} auto={auto} onPress={() => setPickerOpen(true)} />
-                        {/* Atribusi wajib sesuai lisensi Open-Meteo (CC BY 4.0) */}
+                        <RegencyChip name={placeName} auto={auto} onPress={() => setPickerOpen(true)} />
                         <Text style={styles.credit}>Open-Meteo.com</Text>
                     </View>
                 </View>
@@ -206,7 +224,7 @@ const styles = StyleSheet.create({
     },
     title: {
         color: HOME.title,
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '800',
         flexShrink: 1,
     },

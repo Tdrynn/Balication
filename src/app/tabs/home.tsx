@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { BrandName } from '@/components/brand-name';
 import { useCallback, type ComponentProps } from 'react';
 import {
     Image,
@@ -8,7 +10,6 @@ import {
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HeroCarousel } from '@/components/home/hero-carousel';
 import { HOME, SIDE } from '@/components/home/home-theme';
 import { PopularDestinations } from '@/components/home/popular-destinations';
+import { ForYou } from '@/components/home/for-you';
 import { WeatherCard } from '@/components/home/weather-card';
 import { useAuth } from '@/context/auth';
 import { useRegency } from '@/hooks/use-regency';
@@ -24,7 +26,6 @@ import { fetchPopularDestinations, fetchWeather } from '@/lib/api';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
-// Logo aplikasi. Ganti jika file logo Anda ada di tempat lain.
 const LOGO = require('@/assets/images/icon.png');
 
 const CATEGORIES: { label: string; icon: IconName; color: string }[] = [
@@ -35,10 +36,9 @@ const CATEGORIES: { label: string; icon: IconName; color: string }[] = [
 
 export default function HomeScreen() {
     const insets = useSafeAreaInsets();
+    const router = useRouter();
     const { account } = useAuth();
 
-    // Dua sumber data. Masing-masing punya status loading dan error sendiri.
-    // Cuaca mengikuti kabupaten yang dipilih; berganti kabupaten = memuat ulang otomatis
     const { regency, auto, select, locate } = useRegency();
     const loadWeather = useCallback(
         (signal: AbortSignal) => fetchWeather(regency, signal),
@@ -49,7 +49,6 @@ export default function HomeScreen() {
 
     const initial = (account?.name ?? 'B').trim().charAt(0).toUpperCase() || 'B';
 
-    // Spinner tarik-untuk-muat hanya muncul saat memuat ulang (bukan saat pertama kali)
     const refreshing =
         (weather.loading && weather.data?.regencyId === regency.id) ||
         (destinations.loading && destinations.data !== null);
@@ -82,24 +81,26 @@ export default function HomeScreen() {
                 {/* Header */}
                 <View style={styles.header}>
                     <Image source={LOGO} resizeMode="contain" style={styles.logo} />
-                    <Text style={styles.brand}>Balication</Text>
+                    <View style={styles.brandWrap}>
+                        <BrandName scale={0.6} />
+                    </View>
                     <View style={styles.avatar}>
                         <Text style={styles.avatarText}>{initial}</Text>
                     </View>
                 </View>
 
-                {/* Pencarian */}
-                <View style={styles.search}>
+                {/* Pencarian: mengetuk membuka halaman Search */}
+                <Pressable
+                    accessibilityRole="search"
+                    accessibilityLabel="Buka pencarian"
+                    onPress={() => router.push('/search')}
+                    style={({ pressed }) => [styles.search, pressed && styles.pressed]}
+                >
                     <Ionicons name="search" size={18} color={HOME.muted} />
-                    <TextInput
-                        placeholder="find destinations, accommodation and activities..."
-                        placeholderTextColor={HOME.muted}
-                        returnKeyType="search"
-                        // TODO: kirim kata kunci ke halaman Explore atau endpoint pencarian
-                        onSubmitEditing={() => { }}
-                        style={styles.searchInput}
-                    />
-                </View>
+                    <Text style={styles.searchText} numberOfLines={1}>
+                        find destinations, accommodation and activities...
+                    </Text>
+                </Pressable>
 
                 {/* Carousel */}
                 <HeroCarousel />
@@ -128,8 +129,9 @@ export default function HomeScreen() {
                         <Pressable
                             key={item.label}
                             accessibilityRole="button"
-                            // TODO: buka daftar sesuai kategori
-                            onPress={() => { }}
+                            onPress={() =>
+                                router.push({ pathname: '/search', params: { type: item.label } })
+                            }
                             style={({ pressed }) => [styles.category, pressed && styles.pressed]}
                         >
                             <View style={[styles.categoryIcon, { backgroundColor: item.color }]}>
@@ -149,7 +151,7 @@ export default function HomeScreen() {
                     onLocate={locate}
                 />
 
-                {/* Destinasi populer (API Anda) */}
+                <ForYou />
                 <PopularDestinations destinations={destinations} />
             </ScrollView>
         </View>
@@ -175,11 +177,8 @@ const styles = StyleSheet.create({
         height: 38,
         borderRadius: 10,
     },
-    brand: {
+    brandWrap: {
         flex: 1,
-        color: HOME.title,
-        fontSize: 22,
-        fontWeight: '800',
     },
     avatar: {
         width: 42,
@@ -206,10 +205,9 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: HOME.border,
     },
-    searchInput: {
+    searchText: {
         flex: 1,
-        height: '100%',
-        color: HOME.title,
+        color: HOME.muted,
         fontSize: 13,
     },
     plan: {

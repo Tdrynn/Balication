@@ -11,8 +11,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useLanguage } from '@/context/language';
 import type { LocateResult } from '@/hooks/use-regency';
 import { REGENCIES } from '@/lib/regencies';
+import { regencyLabel } from '@/lib/regency-label';
+import type { TranslationKey } from '@/lib/translations';
 
 import { HOME } from './home-theme';
 
@@ -26,32 +29,34 @@ type Props = {
     onClose: () => void;
 };
 
-const MESSAGES: Record<Exclude<LocateResult, 'ok'>, string> = {
-    denied: 'Izin lokasi ditolak. Aktifkan di pengaturan, atau pilih kabupaten secara manual.',
-    outside: 'Anda sedang berada di luar Bali. Pilih kabupaten secara manual.',
-    error: 'Lokasi tidak bisa dibaca. Pastikan GPS aktif lalu coba lagi.',
+// Kunci terjemahan, bukan teks: diterjemahkan saat ditampilkan
+const MESSAGE_KEYS: Record<Exclude<LocateResult, 'ok'>, TranslationKey> = {
+    denied: 'picker.denied',
+    outside: 'picker.outside',
+    error: 'picker.error',
 };
 
 export function RegencyPicker({ visible, selectedId, auto, onSelect, onLocate, onClose }: Props) {
     const insets = useSafeAreaInsets();
+    const { t } = useLanguage();
     const [busy, setBusy] = useState(false);
-    const [message, setMessage] = useState<string | null>(null);
+    const [messageKey, setMessageKey] = useState<TranslationKey | null>(null);
 
     const close = () => {
-        setMessage(null);
+        setMessageKey(null);
         onClose();
     };
 
     const handleLocate = async () => {
         setBusy(true);
-        setMessage(null);
+        setMessageKey(null);
         const result = await onLocate();
         setBusy(false);
 
         if (result === 'ok') {
             close();
         } else {
-            setMessage(MESSAGES[result]);
+            setMessageKey(MESSAGE_KEYS[result]);
         }
     };
 
@@ -66,14 +71,14 @@ export function RegencyPicker({ visible, selectedId, auto, onSelect, onLocate, o
             <View style={styles.overlay}>
                 {/* Ketuk area gelap untuk menutup */}
                 <Pressable
-                    accessibilityLabel="Tutup"
+                    accessibilityLabel={t('common.close')}
                     style={StyleSheet.absoluteFill}
                     onPress={close}
                 />
 
                 <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
                     <View style={styles.handle} />
-                    <Text style={styles.title}>Pilih kabupaten / kota</Text>
+                    <Text style={styles.title}>{t('picker.title')}</Text>
 
                     <ScrollView showsVerticalScrollIndicator={false}>
                         {/* Ikuti lokasi pengguna */}
@@ -87,7 +92,7 @@ export function RegencyPicker({ visible, selectedId, auto, onSelect, onLocate, o
                             <View style={styles.locateLabel}>
                                 <Ionicons name="navigate" size={18} color={HOME.primary} />
                                 <Text style={[styles.rowText, auto && styles.rowTextSelected]}>
-                                    Gunakan lokasi saya
+                                    {t('picker.useMyLocation')}
                                 </Text>
                             </View>
                             {busy ? (
@@ -96,7 +101,7 @@ export function RegencyPicker({ visible, selectedId, auto, onSelect, onLocate, o
                                 auto && <Ionicons name="checkmark" size={20} color={HOME.primary} />
                             )}
                         </Pressable>
-                        {message ? <Text style={styles.message}>{message}</Text> : null}
+                        {messageKey ? <Text style={styles.message}>{t(messageKey)}</Text> : null}
 
                         {/* Pilih manual */}
                         {REGENCIES.map((regency) => {
@@ -113,7 +118,7 @@ export function RegencyPicker({ visible, selectedId, auto, onSelect, onLocate, o
                                     style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
                                 >
                                     <Text style={[styles.rowText, selected && styles.rowTextSelected]}>
-                                        {regency.label}
+                                        {regencyLabel(regency, t)}
                                     </Text>
                                     {selected && <Ionicons name="checkmark" size={20} color={HOME.primary} />}
                                 </Pressable>
