@@ -47,6 +47,9 @@ function RootNavigator() {
             <Stack.Screen name="search" />
             <Stack.Screen name="destination/[id]" />
             <Stack.Screen name="edit-preferences" />
+            <Stack.Screen name="recommendations" />
+            <Stack.Screen name="trip-preferences" />
+            <Stack.Screen name="trip-recommendations" />
           </Stack.Protected>
         </Stack>
       )}
