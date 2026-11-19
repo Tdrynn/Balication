@@ -7,6 +7,8 @@ export const LANGUAGES: { code: Language; label: string }[] = [
 
 const en = {
     'common.cancel': 'Cancel',
+    'common.done': 'Done',
+
     'auth.name': 'Name',
     'auth.email': 'Email',
     'auth.password': 'Password',
@@ -164,6 +166,49 @@ const en = {
     'profile.preferences': 'Travel Preferences',
     'profile.preferences.sub': 'Update the kinds of places you like',
 
+    'trip.title': 'Travel Preferences',
+    'trip.subtitle': "Tell us what you're looking for to get tailored recommendations.",
+    'trip.categories': 'Travel Categories',
+    'trip.location': 'Destination Location',
+    'trip.location.placeholder': 'Select your destinations (you can choose more than one)',
+    'trip.budget': 'Budget',
+    'trip.budget.1': 'IDR <1M',
+    'trip.budget.2': 'IDR 1M-3M',
+    'trip.budget.3': 'IDR 3M-5M',
+    'trip.budget.4': 'IDR >5M',
+    'trip.duration': 'Trip Duration',
+    'trip.duration.placeholder': 'How long are you planning to explore Bali?',
+    'trip.day.one': '{count} day',
+    'trip.day.other': '{count} days',
+    'trip.travelers': 'Number of Travelers',
+    'trip.travelers.placeholder': 'How many people are traveling?',
+    'trip.person.one': '{count} person',
+    'trip.person.other': '{count} people',
+    'trip.next': 'Next',
+    'trip.error.categories': 'Pick at least one category.',
+    'trip.error.required': 'Please choose one.',
+
+    'trip.rec.title': 'Recommendation for you',
+    'trip.rec.subtitle': 'Based on your travel preferences',
+    'trip.rec.empty': 'Nothing matches here yet. Try another tab.',
+    'trip.viewDetail': 'View Detail',
+    'trip.generate': 'Generate My Itinerary',
+
+    'trip.hero': 'Your Bali Adventure,\nPlanned for You',
+    'trip.empty.title': 'No itinerary yet',
+    'trip.empty.text': 'Tell us what you like and we will plan your days in Bali.',
+    'trip.empty.cta': 'Plan my trip',
+    'trip.detail': 'Trip Detail',
+    'trip.stops': 'Trip Stops',
+    'trip.duration.short': 'Duration',
+    'trip.hours': '{count} hrs',
+    'trip.cost': 'Total Cost',
+    'trip.travelers.short': 'Travelers',
+    'trip.viewLocation': 'View Location',
+    'trip.dayLabel': 'DAY {n}',
+    'trip.stay': 'Where you stay',
+    'trip.replan': 'Plan a new trip',
+
     'language.sheetTitle': 'App language',
 
     'logout.title': 'Log out?',
@@ -173,8 +218,9 @@ const en = {
 export type TranslationKey = keyof typeof en;
 
 const id: Record<TranslationKey, string> = {
-
     'common.cancel': 'Batal',
+    'common.back': 'Kembali',
+    'common.done': 'Selesai',
 
     'auth.name': 'Nama',
     'auth.email': 'Email',
@@ -210,7 +256,6 @@ const id: Record<TranslationKey, string> = {
     'login.dont': 'Belum punya akun?',
     'login.sign': 'Daftar Sekarang.',
 
-    'common.back': 'Kembali',
 
     'pref.title': 'Temukan Gaya Perjalananmu',
     'pref.subtitle': 'Pilih minimal {min} kategori untuk mempersonalisasi pengalaman Bali Anda.',
@@ -244,13 +289,13 @@ const id: Record<TranslationKey, string> = {
     'foryou.empty': 'Belum ada yang cocok. Ketuk Ubah untuk mengganti preferensi.',
     'foryou.because': 'Karena Anda suka {name}',
     'foryou.showAll': 'Lihat semua',
-    
+
     'carousel.1': 'Temukan keindahan Bali dengan gaya Anda sendiri',
     'carousel.2': 'Rasakan keajaiban budaya Bali',
     'carousel.3': 'Jadikan setiap momen sebagai petualangan',
     'carousel.4': 'Temukan surga tropis Anda sendiri',
     'carousel.5': 'Bersantailah dan nikmati liburan Anda di Bali',
-    
+
     'common.close': 'Tutup',
 
     'weather.title': 'Cuaca hari ini',
@@ -268,7 +313,7 @@ const id: Record<TranslationKey, string> = {
     'weather.rain': 'Hujan',
     'weather.heavyRain': 'Hujan deras',
     'weather.thunderstorm': 'Badai petir',
-    
+
     'picker.title': 'Pilih kabupaten / kota',
     'picker.useMyLocation': 'Gunakan lokasi saya',
     'picker.denied': 'Izin lokasi ditolak. Aktifkan di pengaturan, atau pilih kabupaten secara manual.',
@@ -277,14 +322,14 @@ const id: Record<TranslationKey, string> = {
 
     'regency.regency': 'Kab. {name}',
     'regency.city': 'Kota {name}',
-    
+
     'common.retry': 'Coba lagi',
     'common.loadError': 'Data tidak bisa dimuat. Periksa koneksi Anda lalu coba lagi.',
-    
+
     'kind.destination': 'Destinasi',
     'kind.activity': 'Aktivitas',
     'kind.accommodation': 'Akomodasi',
-    
+
     'filter.all': 'Semua',
     'filter.filter': 'Filter',
     'filter.location': 'Lokasi',
@@ -304,7 +349,7 @@ const id: Record<TranslationKey, string> = {
     'filter.rating.any': 'Semua rating',
     'filter.rating.4': '4,0 ke atas',
     'filter.rating.45': '4,5 ke atas',
-    
+
     'wishlist.title': 'Wishlist',
     'wishlist.subtitle': 'Pantau destinasi, aktivitas, dan akomodasi favorit Anda.',
     'wishlist.count.one': '{count} Hasil Ditemukan',
@@ -314,7 +359,7 @@ const id: Record<TranslationKey, string> = {
     'wishlist.empty.cta': 'Jelajahi destinasi',
     'wishlist.removed': 'Dihapus dari wishlist',
     'wishlist.undo': 'Urungkan',
-    
+
     'card.viewDetail': 'Lihat Detail',
     'card.viewDetailOf': 'Lihat detail {name}',
     'card.addWish': 'Tambah ke wishlist',
@@ -332,7 +377,50 @@ const id: Record<TranslationKey, string> = {
     'profile.logout.sub': 'Keluar dari akun Anda',
     'profile.preferences': 'Preferensi Wisata',
     'profile.preferences.sub': 'Ubah jenis wisata yang Anda sukai',
-    
+
+    'trip.title': 'Preferensi Perjalanan',
+    'trip.subtitle': 'Ceritakan apa yang Anda cari agar rekomendasinya sesuai.',
+    'trip.categories': 'Kategori Wisata',
+    'trip.location': 'Lokasi Tujuan',
+    'trip.location.placeholder': 'Pilih tujuan Anda (boleh lebih dari satu)',
+    'trip.budget': 'Anggaran',
+    'trip.budget.1': 'Rp <1 jt',
+    'trip.budget.2': 'Rp 1-3 jt',
+    'trip.budget.3': 'Rp 3-5 jt',
+    'trip.budget.4': 'Rp >5 jt',
+    'trip.duration': 'Lama Perjalanan',
+    'trip.duration.placeholder': 'Berapa lama Anda ingin menjelajahi Bali?',
+    'trip.day.one': '{count} hari',
+    'trip.day.other': '{count} hari',
+    'trip.travelers': 'Jumlah Wisatawan',
+    'trip.travelers.placeholder': 'Berapa orang yang bepergian?',
+    'trip.person.one': '{count} orang',
+    'trip.person.other': '{count} orang',
+    'trip.next': 'Lanjut',
+    'trip.error.categories': 'Pilih minimal satu kategori.',
+    'trip.error.required': 'Silakan pilih salah satu.',
+
+    'trip.rec.title': 'Rekomendasi untuk Anda',
+    'trip.rec.subtitle': 'Berdasarkan preferensi perjalanan Anda',
+    'trip.rec.empty': 'Belum ada yang cocok di sini. Coba tab lain.',
+    'trip.viewDetail': 'Lihat Detail',
+    'trip.generate': 'Buat Itinerari Saya',
+
+    'trip.hero': 'Petualangan Baliku,\nDirencanakan Untukmu',
+    'trip.empty.title': 'Belum ada itinerari',
+    'trip.empty.text': 'Ceritakan apa yang Anda suka, kami susunkan harinya di Bali.',
+    'trip.empty.cta': 'Rencanakan perjalanan',
+    'trip.detail': 'Detail Perjalanan',
+    'trip.stops': 'Pemberhentian',
+    'trip.duration.short': 'Durasi',
+    'trip.hours': '{count} jam',
+    'trip.cost': 'Total Biaya',
+    'trip.travelers.short': 'Wisatawan',
+    'trip.viewLocation': 'Lihat Lokasi',
+    'trip.dayLabel': 'HARI {n}',
+    'trip.stay': 'Tempat menginap',
+    'trip.replan': 'Rencanakan perjalanan baru',
+
     'language.sheetTitle': 'Bahasa aplikasi',
 
     'logout.title': 'Keluar?',
