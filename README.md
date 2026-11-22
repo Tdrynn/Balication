@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/images/icon.png" height="100" width="100" alt="Balication">
+</div>
+
 # Balication
 
 Aplikasi pendamping wisata Bali untuk Android dan iOS. Pengguna dapat menjelajahi destinasi, aktivitas, dan akomodasi, menyimpan favorit, mendapat rekomendasi sesuai minat, bertanya kepada asisten AI, dan menyusun itinerary perjalanan.
@@ -60,14 +64,13 @@ Tidak perlu akun Apple Developer untuk mencoba di iPhone lewat Expo Go.
 
 ```bash
 # 1. Unduh proyek
-git clone <URL-REPOSITORY-ANDA>
+git clone https://github.com/Tdrynn/Balication.git
 cd PBL5D2
 
 # 2. Pasang dependensi
 npm install
 
 # 3. (Opsional) salin dan isi konfigurasi
-#    Windows PowerShell: copy .env.example .env
 cp .env.example .env
 
 # 4. Jalankan
@@ -297,5 +300,3 @@ Folder itu dibuat otomatis (tipe rute) dan tidak perlu dibagikan. Cukup `.expo/`
 ## Kontributor
 
 PBL5D2
-
-## Lisensi
