@@ -96,10 +96,10 @@ export default function OnboardingScreen() {
 
       <Animated.View style={[styles.textBlock, textStyle]}>
         <Text style={[styles.title, compact && styles.titleCompact]}>
-          t('onboarding.title')
+          {t('onboarding.title')}
         </Text>
         <Text style={[styles.subtitle, compact && styles.subtitleCompact]}>
-          t('onboarding.subtitle')
+          {t('onboarding.subtitle')}
         </Text>
       </Animated.View>
 
@@ -124,7 +124,7 @@ export default function OnboardingScreen() {
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
         >
           <View style={styles.buttonContent}>
-            <Text style={styles.buttonText}>t('onboarding.button')</Text>
+            <Text style={styles.buttonText}>{t('onboarding.button')}</Text>
             <Ionicons
               name={'arrow-forward'}
               size={21}

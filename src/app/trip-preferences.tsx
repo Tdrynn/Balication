@@ -22,7 +22,6 @@ import { PREFERENCE_CATEGORIES } from '@/lib/preference-categories';
 import { REGENCIES } from '@/lib/regencies';
 import { regencyLabel } from '@/lib/regency-label';
 
-/** Layar 1 dari 2: formulir "Travel Preferences" untuk menyusun itinerary. */
 export default function TripPreferencesScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -30,7 +29,6 @@ export default function TripPreferencesScreen() {
     const saved = usePreferences();
     const draft = useTripDraft();
 
-    // Kategori awal mengikuti preferensi akun, tapi boleh diubah untuk perjalanan ini
     const [categories, setCategories] = useState<string[]>(
         draft.categories.length > 0 ? draft.categories : saved.categories,
     );
@@ -68,7 +66,6 @@ export default function TripPreferencesScreen() {
             setShowError(true);
             return;
         }
-        // selectedIds dikosongkan agar layar berikutnya memilihkan ulang sesuai isian baru
         setTripDraft({ categories, regencyIds, budgetId, days, travelers, selectedIds: [] });
         router.push('/trip-recommendations');
     };

@@ -42,7 +42,6 @@ function Tile({ category, size, selected, onPress }: TileProps) {
     const { t } = useLanguage();
     const [scale] = useState(() => new Animated.Value(selected ? 0.96 : 1));
 
-    // Kartu sedikit mengecil saat dipilih (pegas)
     useEffect(() => {
         Animated.spring(scale, {
             toValue: selected ? 0.96 : 1,
@@ -53,7 +52,7 @@ function Tile({ category, size, selected, onPress }: TileProps) {
         }).start();
     }, [selected, scale]);
 
-    const inner = size - 6; // dikurangi border 3 + 3
+    const inner = size - 6;
 
     return (
         <Animated.View style={{ transform: [{ scale }] }}>
@@ -135,7 +134,7 @@ export function PreferencePicker({ initial, submitLabel, onSubmit, onCancel }: P
 
     const toggle = (id: string) => {
         Haptics.selectionAsync().catch(() => {
-            // perangkat tanpa haptic: abaikan
+            
         });
         setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
     };

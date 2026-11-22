@@ -22,14 +22,12 @@ import { HOME } from './home-theme';
 type Props = {
     visible: boolean;
     selectedId: string;
-    /** true jika cuaca sedang mengikuti lokasi pengguna */
     auto: boolean;
     onSelect: (id: string) => void;
     onLocate: () => Promise<LocateResult>;
     onClose: () => void;
 };
 
-// Kunci terjemahan, bukan teks: diterjemahkan saat ditampilkan
 const MESSAGE_KEYS: Record<Exclude<LocateResult, 'ok'>, TranslationKey> = {
     denied: 'picker.denied',
     outside: 'picker.outside',

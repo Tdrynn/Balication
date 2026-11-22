@@ -24,7 +24,6 @@ function Card({ item }: { item: Destination }) {
             style={styles.card}
         >
             {item.image ? (
-                // Ukuran ditulis eksplisit agar gambar besar tidak tampil membesar
                 <Image
                     source={{ uri: item.image }}
                     resizeMode="cover"

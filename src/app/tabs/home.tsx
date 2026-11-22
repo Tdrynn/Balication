@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { BrandName } from '@/components/brand-name';
+import { useLanguage } from '@/context/language';
+import type { TranslationKey } from '@/lib/translations';
 import { useCallback, type ComponentProps } from 'react';
 import {
     Image,
@@ -23,21 +25,23 @@ import { useAuth } from '@/context/auth';
 import { useRegency } from '@/hooks/use-regency';
 import { useRemote } from '@/hooks/use-remote';
 import { fetchPopularDestinations, fetchWeather } from '@/lib/api';
+import { Avatar } from '@/components/profile/avatar';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
 const LOGO = require('@/assets/images/icon.png');
 
-const CATEGORIES: { label: string; icon: IconName; color: string }[] = [
-    { label: 'Destination', icon: 'map-outline', color: '#17403E' },
-    { label: 'Activity', icon: 'walk-outline', color: '#2F8F8A' },
-    { label: 'Accommodation', icon: 'home-outline', color: '#6F9FD0' },
+const CATEGORIES: { type: string; labelKey: TranslationKey; icon: IconName; color: string }[] = [
+    { type: 'Destination', labelKey: 'kind.destination', icon: 'map-outline', color: '#17403E' },
+    { type: 'Activity', labelKey: 'kind.activity', icon: 'walk-outline', color: '#2F8F8A' },
+    { type: 'Accommodation', labelKey: 'kind.accommodation', icon: 'home-outline', color: '#6F9FD0' },
 ];
 
 export default function HomeScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { account } = useAuth();
+    const { t } = useLanguage();
 
     const { regency, auto, select, locate } = useRegency();
     const loadWeather = useCallback(
@@ -78,38 +82,38 @@ export default function HomeScreen() {
                     { paddingTop: insets.top + 12, paddingBottom: 130 },
                 ]}
             >
-                {/* Header */}
+                {/* Header logo, brand, dan profile */}
                 <View style={styles.header}>
                     <Image source={LOGO} resizeMode="contain" style={styles.logo} />
                     <View style={styles.brandWrap}>
                         <BrandName scale={0.6} />
                     </View>
                     <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{initial}</Text>
+                        <Avatar avatarId={account?.avatar} size={38} />
                     </View>
                 </View>
 
-                {/* Pencarian: mengetuk membuka halaman Search */}
+                {/* Kotak pencarian */}
                 <Pressable
                     accessibilityRole="search"
-                    accessibilityLabel="Buka pencarian"
+                    accessibilityLabel={t('home.search.a11y')}
                     onPress={() => router.push('/search')}
                     style={({ pressed }) => [styles.search, pressed && styles.pressed]}
                 >
                     <Ionicons name="search" size={18} color={HOME.muted} />
                     <Text style={styles.searchText} numberOfLines={1}>
-                        find destinations, accommodation and activities...
+                        {t('home.search.placeholder')}
                     </Text>
                 </Pressable>
 
-                {/* Carousel */}
+                {/* Carousel gambar */}
                 <HeroCarousel />
 
-                {/* Rencanakan perjalanan */}
+                {/* Travel plan */}
                 <View style={styles.plan}>
-                    <Text style={styles.planTitle}>Plan your travel</Text>
+                    <Text style={styles.planTitle}>{t('home.plan.title')}</Text>
                     <Text style={styles.planSub}>
-                        Let AI find the perfect destinations based your preferences.
+                        {t('home.plan.sub')}
                     </Text>
                     <Pressable
                         accessibilityRole="button"
@@ -118,7 +122,7 @@ export default function HomeScreen() {
                         style={({ pressed }) => [styles.planButton, pressed && styles.pressed]}
                     >
                         <Ionicons name="sparkles-outline" size={16} color="#FFFFFF" />
-                        <Text style={styles.planButtonText}>find some destinations for me</Text>
+                        <Text style={styles.planButtonText}>{t('home.plan.button')}</Text>
                         <Ionicons name="chevron-forward" size={14} color="#FFFFFF" />
                     </Pressable>
                 </View>
@@ -127,22 +131,20 @@ export default function HomeScreen() {
                 <View style={styles.categories}>
                     {CATEGORIES.map((item) => (
                         <Pressable
-                            key={item.label}
+                            key={item.type}
                             accessibilityRole="button"
-                            onPress={() =>
-                                router.push({ pathname: '/search', params: { type: item.label } })
-                            }
+                            onPress={() => router.push({ pathname: '/search', params: { type: item.type } })}
                             style={({ pressed }) => [styles.category, pressed && styles.pressed]}
                         >
                             <View style={[styles.categoryIcon, { backgroundColor: item.color }]}>
                                 <Ionicons name={item.icon} size={30} color="#FFFFFF" />
                             </View>
-                            <Text style={styles.categoryLabel}>{item.label}</Text>
+                            <Text style={styles.categoryLabel}>{t(item.labelKey)}</Text>
                         </Pressable>
                     ))}
                 </View>
 
-                {/* Cuaca (Open-Meteo) */}
+                {/* Cuaca */}
                 <WeatherCard
                     weather={weather}
                     regency={regency}
@@ -151,8 +153,12 @@ export default function HomeScreen() {
                     onLocate={locate}
                 />
 
+                {/* Rekomendasi berdasarkan preferensi pengguna */}
                 <ForYou />
+
+                {/* Rekomendasi wisata populer */}
                 <PopularDestinations destinations={destinations} />
+
             </ScrollView>
         </View>
     );
@@ -164,12 +170,12 @@ const styles = StyleSheet.create({
         backgroundColor: HOME.bg,
     },
     content: {
-        gap: 18,
+        gap: 14,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: 8,
         paddingHorizontal: SIDE,
     },
     logo: {
@@ -181,8 +187,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     avatar: {
-        width: 42,
-        height: 42,
+        width: 35,
+        height: 35,
         borderRadius: 21,
         backgroundColor: HOME.primary,
         alignItems: 'center',

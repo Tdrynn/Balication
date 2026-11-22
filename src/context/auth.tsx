@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     createContext,
     useCallback,
@@ -7,18 +7,24 @@ import {
     useMemo,
     useState,
     type ReactNode,
-} from 'react'
+} from 'react';
 
 const ACCOUNT_KEY = 'auth_account_v1';
-const SESSION_KEY = 'auth_account_v1';
+const SESSION_KEY = 'auth_session_v1';
 
-// Konteks
-// false = user harus login lagi setiap relog aplikasi
-// true = sesi disimpan, tidak perlu login lagi sampai user klik sign out
-
+/**
+ * false = pengguna harus login lagi setiap aplikasi dibuka (halaman Login selalu tampil
+ *         setelah pendaftaran pertama).
+ * true  = sesi disimpan, pengguna langsung masuk sampai menekan Sign Out.
+ */
 const KEEP_SIGNED_IN = false;
 
-export type Account = { name: string; email: string };
+export type Account = {
+    name: string;
+    email: string;
+    /** id gambar profil pilihan (lihat components/profile/avatar.tsx); kosong = huruf pertama nama */
+    avatar?: string;
+};
 export type AuthMode = 'login' | 'register';
 export type AuthResult = { ok: true } | { ok: false; error: string };
 
@@ -26,17 +32,19 @@ type SignUpData = { name: string; email: string; password: string };
 type SignInData = { email: string; password: string };
 
 type AuthState = {
-    // true setelah data dari database selesai dibaca
+    /** true setelah data dari penyimpanan selesai dibaca */
     loaded: boolean;
-    // akun yang pernah di registrasi di perangkat ini
+    /** akun yang pernah didaftarkan di perangkat ini (null = belum pernah daftar) */
     account: Account | null;
     signedIn: boolean;
-    // layar autentikasi yang sedang aktif
+    /** layar autentikasi yang sedang aktif */
     mode: AuthMode;
     setMode: (mode: AuthMode) => void;
     signUp: (data: SignUpData) => Promise<AuthResult>;
     signIn: (data: SignInData) => Promise<AuthResult>;
     signOut: () => Promise<void>;
+    /** ubah nama dan/atau gambar profil akun yang sedang masuk */
+    updateAccount: (patch: Partial<Pick<Account, 'name' | 'avatar'>>) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -46,7 +54,11 @@ function parseAccount(raw: string | null): Account | null {
     try {
         const value = JSON.parse(raw);
         if (typeof value?.name === 'string' && typeof value?.email === 'string') {
-            return { name: value.name, email: value.email };
+            return {
+                name: value.name,
+                email: value.email,
+                avatar: typeof value.avatar === 'string' ? value.avatar : undefined,
+            };
         }
     } catch {
         // data rusak: anggap belum ada akun
@@ -73,10 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                 const saved = parseAccount(rawAccount);
                 setAccount(saved);
+                // Belum pernah daftar -> Register. Sudah pernah -> Login.
                 setMode(saved ? 'login' : 'register');
                 setSignedIn(KEEP_SIGNED_IN && saved !== null && rawSession === 'true');
             } catch {
-                // register
+                // gagal membaca: biarkan nilai awal (Register)
             } finally {
                 if (active) setLoaded(true);
             }
@@ -87,8 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
     }, []);
 
+    // ---------------------------------------------------------------------------
     // PENTING: dua fungsi di bawah ini masih contoh lokal tanpa server.
     // Ganti isinya dengan pemanggilan backend (Firebase, Supabase, atau API sendiri).
+    // ---------------------------------------------------------------------------
 
     const signUp = useCallback(async (data: SignUpData): Promise<AuthResult> => {
         // TODO: kirim name, email, password ke backend dan tunggu hasilnya.
@@ -112,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!account) {
                 return {
                     ok: false,
-                    error: 'No account found on this devices. Please sign up first.',
+                    error: 'No account found on this device. Please sign up first.',
                 };
             }
             if (account.email.toLowerCase() !== data.email.trim().toLowerCase()) {
@@ -139,9 +154,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSignedIn(false);
     }, [account]);
 
+    const updateAccount = useCallback(
+        async (patch: Partial<Pick<Account, 'name' | 'avatar'>>) => {
+            if (!account) return;
+            // TODO: kirim perubahan ke backend juga
+            const next: Account = { ...account, ...patch };
+            setAccount(next);
+            try {
+                await AsyncStorage.setItem(ACCOUNT_KEY, JSON.stringify(next));
+            } catch {
+                // tidak fatal: perubahan hanya tidak diingat setelah aplikasi ditutup
+            }
+        },
+        [account],
+    );
+
     const value = useMemo(
-        () => ({ loaded, account, signedIn, mode, setMode, signUp, signIn, signOut }),
-        [loaded, account, signedIn, mode, signUp, signIn, signOut],
+        () => ({ loaded, account, signedIn, mode, setMode, signUp, signIn, signOut, updateAccount }),
+        [loaded, account, signedIn, mode, signUp, signIn, signOut, updateAccount],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

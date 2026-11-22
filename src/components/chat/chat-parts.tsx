@@ -184,8 +184,6 @@ const styles = StyleSheet.create({
     pressed: {
         opacity: 0.75,
     },
-
-    // AI
     aiRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
@@ -234,8 +232,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 8,
     },
-
-    // Pengguna
     userRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
@@ -265,8 +261,6 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '800',
     },
-
-    // Tombol cepat
     chip: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -283,8 +277,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
     },
-
-    // Kartu destinasi
     cards: {
         gap: 10,
         paddingLeft: SIDE + 50,

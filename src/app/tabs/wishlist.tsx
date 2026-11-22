@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HOME, SIDE } from '@/components/home/home-theme';
+import { FilterToggle, animateLayout } from '@/components/search/filter-toggle';
 import { OptionSheet } from '@/components/search/option-sheet';
 import { ResultCard } from '@/components/search/result-card';
 import { useLanguage } from '@/context/language';
@@ -86,6 +87,8 @@ export default function WishlistScreen() {
   const [priceId, setPriceId] = useState(ANY);
   const [ratingId, setRatingId] = useState(ANY);
   const [sheet, setSheet] = useState<SheetName>(null);
+  // Panel filter disembunyikan dulu supaya layar tidak ramai
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [undo, setUndo] = useState<{ id: string; name: string } | null>(null);
 
   const destinations = useRemote(fetchDestinations);
@@ -133,8 +136,19 @@ export default function WishlistScreen() {
     return true;
   });
 
-  const filtersActive =
-    category !== ANY || regencyId !== ANY || priceId !== ANY || ratingId !== ANY || kind !== 'All';
+  const activeCount = [
+    kind !== 'All',
+    category !== ANY,
+    regencyId !== ANY,
+    priceId !== ANY,
+    ratingId !== ANY,
+  ].filter(Boolean).length;
+  const filtersActive = activeCount > 0;
+
+  const toggleFilters = () => {
+    animateLayout();
+    setFiltersOpen((open) => !open);
+  };
 
   const reset = () => {
     setKind('All');
@@ -190,7 +204,6 @@ export default function WishlistScreen() {
   const hero = (
     <View style={styles.hero}>
       <View style={styles.titleRow}>
-        <Ionicons name="heart" size={34} color={HOME.dark} />
         <Text style={styles.title}>{t('wishlist.title')}</Text>
       </View>
       <Text style={styles.subtitle}>{t('wishlist.subtitle')}</Text>
@@ -199,71 +212,82 @@ export default function WishlistScreen() {
 
   const filters = hasSaved ? (
     <View style={styles.filters}>
-      {/* Jenis */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {KIND_CHIPS.map((item) => {
-          const selected = item === kind;
-          return (
-            <Pressable
-              key={item}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              onPress={() => setKind(item)}
-              style={[styles.kind, selected && styles.kindActive]}
-            >
-              <Text style={[styles.kindText, selected && styles.kindTextActive]}>
-                {t(KIND_KEYS[item])}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      {/* Tombol Filter + jumlah hasil; reset muncul bila ada filter aktif */}
+      <FilterToggle
+        open={filtersOpen}
+        onToggle={toggleFilters}
+        activeCount={activeCount}
+        trailing={
+          <>
+            {filtersActive ? (
+              <Pressable onPress={reset} accessibilityRole="button" hitSlop={8}>
+                <Text style={styles.link}>{t('filter.reset')}</Text>
+              </Pressable>
+            ) : null}
+            <Text style={styles.count}>
+              {t(results.length === 1 ? 'wishlist.count.one' : 'wishlist.count.other', {
+                count: results.length,
+              })}
+            </Text>
+          </>
+        }
+      />
 
-      {/* Filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        <FilterPill
-          icon="options-outline"
-          label={labelOf(categoryOptions, category, t('filter.filter'))}
-          active={category !== ANY}
-          onPress={() => setSheet('category')}
-        />
-        <FilterPill
-          label={labelOf(locationOptions, regencyId, t('filter.location'))}
-          active={regencyId !== ANY}
-          onPress={() => setSheet('location')}
-        />
-        <FilterPill
-          label={labelOf(priceOptions, priceId, t('filter.priceRange'))}
-          active={priceId !== ANY}
-          onPress={() => setSheet('price')}
-        />
-        <FilterPill
-          label={labelOf(ratingOptions, ratingId, t('filter.rating'))}
-          active={ratingId !== ANY}
-          onPress={() => setSheet('rating')}
-        />
-      </ScrollView>
+      {filtersOpen ? (
+        <>
+          {/* Jenis */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.row}
+          >
+            {KIND_CHIPS.map((item) => {
+              const selected = item === kind;
+              return (
+                <Pressable
+                  key={item}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => setKind(item)}
+                  style={[styles.kind, selected && styles.kindActive]}
+                >
+                  <Text style={[styles.kindText, selected && styles.kindTextActive]}>
+                    {t(KIND_KEYS[item])}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
 
-      <View style={styles.countRow}>
-        <Text style={styles.count}>
-          {t(results.length === 1 ? 'wishlist.count.one' : 'wishlist.count.other', {
-            count: results.length,
-          })}
-        </Text>
-        {filtersActive ? (
-          <Pressable onPress={reset} accessibilityRole="button" hitSlop={8}>
-            <Text style={styles.link}>{t('filter.reset')}</Text>
-          </Pressable>
-        ) : null}
-      </View>
+          {/* Filter */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.row}
+          >
+            <FilterPill
+              label={labelOf(categoryOptions, category, t('filter.category'))}
+              active={category !== ANY}
+              onPress={() => setSheet('category')}
+            />
+            <FilterPill
+              label={labelOf(locationOptions, regencyId, t('filter.location'))}
+              active={regencyId !== ANY}
+              onPress={() => setSheet('location')}
+            />
+            <FilterPill
+              label={labelOf(priceOptions, priceId, t('filter.priceRange'))}
+              active={priceId !== ANY}
+              onPress={() => setSheet('price')}
+            />
+            <FilterPill
+              label={labelOf(ratingOptions, ratingId, t('filter.rating'))}
+              active={ratingId !== ANY}
+              onPress={() => setSheet('rating')}
+            />
+          </ScrollView>
+        </>
+      ) : null}
     </View>
   ) : null;
 
@@ -389,7 +413,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: HOME.title,
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '800',
   },
   subtitle: {

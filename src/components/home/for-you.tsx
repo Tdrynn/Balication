@@ -11,7 +11,6 @@ import { recommend, type Recommendation } from '@/lib/preference-categories';
 
 import { HOME, SIDE } from './home-theme';
 
-// Ukuran dan gaya sama dengan "Popular Destination" agar kedua bagian terlihat serasi
 const IMAGE_SIZE = 96;
 
 function Card({ item, onPress }: { item: Recommendation; onPress: () => void }) {
@@ -46,7 +45,7 @@ function Card({ item, onPress }: { item: Recommendation; onPress: () => void }) 
                 </View>
             ) : null}
 
-            {/* Kategori pilihan pengguna yang cocok: alasan destinasi ini muncul di sini */}
+            {/* Kategori pilihan pengguna */}
             <View style={styles.locationRow}>
                 <Ionicons name="sparkles" size={11} color={HOME.primary} />
                 <Text style={styles.reason} numberOfLines={1}>
@@ -67,7 +66,6 @@ function Skeleton() {
     );
 }
 
-/** Bagian "Rekomendasi untuk Anda" di Home, berdasarkan preferensi yang dipilih pengguna. */
 export function ForYou() {
     const router = useRouter();
     const { t } = useLanguage();
@@ -76,7 +74,6 @@ export function ForYou() {
 
     if (categories.length === 0) return null;
 
-    // Home hanya menampilkan beberapa teratas; daftar lengkap ada di "Show all"
     const items = recommend(data ?? [], categories, 8);
 
     return (

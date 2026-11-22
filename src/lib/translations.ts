@@ -8,6 +8,8 @@ export const LANGUAGES: { code: Language; label: string }[] = [
 const en = {
     'common.cancel': 'Cancel',
     'common.done': 'Done',
+    'common.back': 'Back',
+    'common.save': 'Save',
 
     'auth.name': 'Name',
     'auth.email': 'Email',
@@ -43,7 +45,30 @@ const en = {
     'login.dont': 'Don`t have an account?',
     'login.sign': 'Sign Up.',
 
-    'common.back': 'Back',
+    'home.search.a11y': 'Open search',
+    'home.search.placeholder': 'find destinations, accommodation and activities...',
+    'home.plan.title': 'Plan your travel',
+    'home.plan.sub': 'Let AI find the perfect destinations based on your preferences.',
+    'home.plan.button': 'find some destinations for me',
+    'home.popular': 'Popular Destination',
+    'home.showAll': 'Show all',
+    'home.popular.empty': 'No popular destinations yet.',
+    'home.slide.1': 'Discover the beauty of Bali in your own style',
+    'home.slide.2': 'Find hidden beaches and quiet waterfalls',
+    'home.slide.3': 'Plan your trip with a little help from AI',
+
+    'avatar.title': 'Profile photo',
+    'avatar.text': 'Choose a picture for your profile.',
+    'avatar.edit': 'Change profile photo',
+    'avatar.initial': 'Use my initial',
+    'avatar.option': 'Avatar {name}',
+
+    'account.text': 'Update how your name appears in the app.',
+    'account.name': 'Full name',
+    'account.email': 'Email',
+    'account.nameRequired': "Name can't be empty.",
+
+    'language.dialogText': 'Choose the language used across the app.',
 
     'pref.title': 'Discover Your Travel Style',
     'pref.subtitle': 'Choose at least {min} categories to personalize your Bali experience.',
@@ -137,6 +162,15 @@ const en = {
     'filter.rating.any': 'Any rating',
     'filter.rating.4': '4.0 and up',
     'filter.rating.45': '4.5 and up',
+    'filter.show': 'Show filters',
+    'filter.hide': 'Hide filters',
+
+    'search.title': 'Search',
+    'search.clear': 'Clear text',
+    'search.count.one': '{count} result found',
+    'search.count.other': '{count} results found',
+    'search.empty.title': 'No results',
+    'search.empty.text': 'Try a different keyword or loosen the filters.',
 
     'wishlist.title': 'Wishlist',
     'wishlist.subtitle': 'Keep track of your favorite destinations, activities, and accommodations.',
@@ -221,6 +255,7 @@ const id: Record<TranslationKey, string> = {
     'common.cancel': 'Batal',
     'common.back': 'Kembali',
     'common.done': 'Selesai',
+    'common.save': 'Simpan',
 
     'auth.name': 'Nama',
     'auth.email': 'Email',
@@ -256,6 +291,30 @@ const id: Record<TranslationKey, string> = {
     'login.dont': 'Belum punya akun?',
     'login.sign': 'Daftar Sekarang.',
 
+    'home.search.a11y': 'Buka pencarian',
+    'home.search.placeholder': 'cari destinasi, akomodasi, dan aktivitas...',
+    'home.plan.title': 'Rencanakan perjalanan Anda',
+    'home.plan.sub': 'Biarkan AI menemukan destinasi yang pas sesuai preferensi Anda.',
+    'home.plan.button': 'carikan destinasi untuk saya',
+    'home.popular': 'Destinasi Populer',
+    'home.showAll': 'Lihat semua',
+    'home.popular.empty': 'Belum ada destinasi populer.',
+    'home.slide.1': 'Temukan keindahan Bali dengan gayamu sendiri',
+    'home.slide.2': 'Temukan pantai tersembunyi dan air terjun yang tenang',
+    'home.slide.3': 'Rencanakan perjalananmu dengan bantuan AI',
+
+    'avatar.title': 'Foto profil',
+    'avatar.text': 'Pilih gambar untuk profil Anda.',
+    'avatar.edit': 'Ubah foto profil',
+    'avatar.initial': 'Pakai huruf pertama nama',
+    'avatar.option': 'Avatar {name}',
+
+    'account.text': 'Ubah nama yang tampil di aplikasi.',
+    'account.name': 'Nama lengkap',
+    'account.email': 'Email',
+    'account.nameRequired': 'Nama tidak boleh kosong.',
+
+    'language.dialogText': 'Pilih bahasa yang dipakai di seluruh aplikasi.',
 
     'pref.title': 'Temukan Gaya Perjalananmu',
     'pref.subtitle': 'Pilih minimal {min} kategori untuk mempersonalisasi pengalaman Bali Anda.',
@@ -349,7 +408,16 @@ const id: Record<TranslationKey, string> = {
     'filter.rating.any': 'Semua rating',
     'filter.rating.4': '4,0 ke atas',
     'filter.rating.45': '4,5 ke atas',
+    'filter.show': 'Tampilkan filter',
+    'filter.hide': 'Sembunyikan filter',
 
+    'search.title': 'Cari',
+    'search.clear': 'Hapus teks',
+    'search.count.one': '{count} hasil ditemukan',
+    'search.count.other': '{count} hasil ditemukan',
+    'search.empty.title': 'Tidak ada hasil',
+    'search.empty.text': 'Coba kata kunci lain atau longgarkan filternya.',
+    
     'wishlist.title': 'Wishlist',
     'wishlist.subtitle': 'Pantau destinasi, aktivitas, dan akomodasi favorit Anda.',
     'wishlist.count.one': '{count} Hasil Ditemukan',

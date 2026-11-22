@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import type { ComponentProps } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop as GradientStop } from 'react-native-svg';
 
@@ -34,7 +34,6 @@ function openMap(d: Destination) {
       ? `${d.latitude},${d.longitude}`
       : encodeURIComponent(`${d.name} ${d.area} Bali`);
   Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`).catch(() => {
-    // tidak ada aplikasi peta: abaikan
   });
 }
 
@@ -42,17 +41,12 @@ function Hero() {
   const { t } = useLanguage();
   return (
     <View style={styles.hero}>
-      {/* Gradien matahari terbenam sebagai pengganti foto; ganti dengan <Image> bila ada fotonya */}
-      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} preserveAspectRatio="none">
-        <Defs>
-          <LinearGradient id="sunset" x1="0" y1="0" x2="1" y2="1">
-            <GradientStop offset="0" stopColor="#3C3F6B" />
-            <GradientStop offset="0.55" stopColor="#D9728A" />
-            <GradientStop offset="1" stopColor="#F2A65A" />
-          </LinearGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#sunset)" />
-      </Svg>
+      <Image
+        source={require('@/assets/images/itinerary.png')}
+        height={100}
+        style={StyleSheet.absoluteFill}
+        resizeMode="contain"
+      />
       <Text style={styles.heroTitle}>{t('trip.hero')}</Text>
     </View>
   );
@@ -199,7 +193,6 @@ function DaySection({
               style={[
                 styles.line,
                 i === 0 && { top: 12 },
-                // baris terakhir: garis berhenti di titik, tidak memanjang ke bawah
                 i === day.stops.length - 1 && { bottom: undefined, height: i === 0 ? 0 : 12 },
               ]}
             />
@@ -215,7 +208,6 @@ function DaySection({
   );
 }
 
-/** Tab Itinerary: belum ada rencana -> ajakan menyusun; sudah ada -> jadwal per hari. */
 export default function ItineraryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -309,7 +301,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   hero: {
-    height: 104,
+    height: 99,
     borderRadius: 20,
     overflow: 'hidden',
     justifyContent: 'center',

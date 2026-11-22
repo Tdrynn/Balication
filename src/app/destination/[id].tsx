@@ -55,7 +55,6 @@ export default function DestinationDetailScreen() {
         </Pressable>
     );
 
-    // Memuat / gagal / tidak ditemukan
     if (!destination) {
         return (
             <View style={styles.state}>
@@ -78,7 +77,6 @@ export default function DestinationDetailScreen() {
     }
 
     const wished = wishlist.has(destination.id);
-    // Tanpa gambar: satu slide pengganti (blok warna)
     const slides: (string | undefined)[] =
         destination.images.length > 0 ? destination.images : [undefined];
 
@@ -88,7 +86,6 @@ export default function DestinationDetailScreen() {
             destination.latitude !== undefined && destination.longitude !== undefined;
         const query = hasCoords ? `${destination.latitude},${destination.longitude}` : place;
         Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`).catch(() => {
-            // tidak ada aplikasi peta / peramban: abaikan
         });
     };
 

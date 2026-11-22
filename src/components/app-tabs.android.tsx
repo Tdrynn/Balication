@@ -1,62 +1,82 @@
 import * as Haptics from 'expo-haptics';
 import { Tabs, useRouter, type Href } from 'expo-router';
-import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
 import {
   Animated,
+  Easing,
   Image,
   Keyboard,
-  Pressable,
+  PanResponder,
   StyleSheet,
+  useColorScheme,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { useLanguage } from '@/context/language';
 
-// Tipe props tab bar diambil dari Tabs sendiri (tidak boleh impor @react-navigation/* di SDK 56+)
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
-const COLORS = {
-  icon: '#FFFFFF',
-  glass: 'rgba(21, 59, 59, 0.62)', // bar: kaca asap hijau tua
-  glassBorder: 'rgba(255, 255, 255, 0.24)',
-  pill: 'rgba(61, 147, 101, 0.58)', // indikator tab aktif: kaca hijau
-  pillBorder: 'rgba(255, 255, 255, 0.42)',
+const PALETTES = {
+  dark: {
+    glass: 'rgba(44, 44, 46, 0.62)',
+    glassBorder: 'rgba(255, 255, 255, 0.18)',
+    topEdge: 'rgba(255, 255, 255, 0.35)',
+    pill: 'rgba(255, 255, 255, 0.16)',
+    pillBorder: 'rgba(255, 255, 255, 0.28)',
+    pillLift: 'rgba(255, 255, 255, 0.10)',
+    inactive: 'rgba(255, 255, 255, 0.68)',
+    active: '#0A84FF',
+  },
+  light: {
+    glass: 'rgba(250, 250, 252, 0.90)',
+    glassBorder: 'rgba(255, 255, 255, 0.75)',
+    topEdge: 'rgba(255, 255, 255, 0.95)',
+    pill: 'rgba(120, 120, 128, 0.20)',
+    pillBorder: 'rgba(120, 120, 128, 0.40)',
+    pillLift: 'rgba(255, 255, 255, 0.35)',
+    inactive: 'rgba(60, 60, 67, 0.72)',
+    active: '#007AFF',
+  },
 };
 
-const ICONS = {
+const ICONS: Record<string, number> = {
   home: require('@/assets/images/tabIcons/home.png'),
-  explore: require('@/assets/images/tabIcons/bookmark.png'),
+  itinerary: require('@/assets/images/tabIcons/bookmark.png'),
   wishlist: require('@/assets/images/tabIcons/heart.png'),
   chatbot: require('@/assets/images/tabIcons/chatbox.png'),
   profile: require('@/assets/images/tabIcons/profile.png'),
 };
 
 const BAR_HEIGHT = 70;
-const BAR_RADIUS = 26;
-const PAD = 6;
-const BORDER = 1;
+const BAR_RADIUS = BAR_HEIGHT / 2;
+const PAD = 5;
+const LIFT_SCALE = 1.15;
+const EASE = Easing.out(Easing.cubic);
 
-function TabIcon({ source, focused }: { source: number; focused: boolean }) {
-  return (
-    <Image
-      source={source}
-      resizeMode="contain"
-      style={[styles.icon, { opacity: focused ? 1 : 0.75 }]}
-    />
-  );
-}
+const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 
-/** Kilau cahaya di sisi atas permukaan kaca (putih memudar ke transparan). */
-function Sheen({ id, strength, reach }: { id: string; strength: number; reach: number }) {
+/** Kilau cahaya: putih di atas memudar ke transparan, dengan pantulan tipis di dasar. */
+function Sheen({
+  id,
+  top,
+  reach,
+  bottom = 0,
+}: {
+  id: string;
+  top: number;
+  reach: number;
+  bottom?: number;
+}) {
   return (
     <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
         <LinearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={strength} />
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={top} />
           <Stop offset={reach} stopColor="#FFFFFF" stopOpacity={0} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={bottom} />
         </LinearGradient>
       </Defs>
       <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
@@ -64,98 +84,97 @@ function Sheen({ id, strength, reach }: { id: string; strength: number; reach: n
   );
 }
 
-type TabItemProps = {
-  width: number;
-  focused: boolean;
-  label: string;
-  icon: ReactNode;
-  accessibilityLabel?: string;
-  onPress: () => void;
-  onLongPress: () => void;
-};
-
-function TabItem({
-  width,
-  focused,
+/** Isi satu tab (ikon + label) dengan satu warna. */
+function TabContent({
+  source,
   label,
-  icon,
-  accessibilityLabel,
-  onPress,
-  onLongPress,
-}: TabItemProps) {
-  const [focus] = useState(() => new Animated.Value(focused ? 1 : 0));
-  const [press] = useState(() => new Animated.Value(1));
-
-  // Ikon membesar dan sedikit naik saat tab aktif (pegas, seperti iOS)
-  useEffect(() => {
-    Animated.spring(focus, {
-      toValue: focused ? 1 : 0,
-      useNativeDriver: true,
-      damping: 14,
-      stiffness: 190,
-      mass: 0.8,
-    }).start();
-  }, [focused, focus]);
-
-  const pressTo = (toValue: number) =>
-    Animated.spring(press, {
-      toValue,
-      useNativeDriver: true,
-      speed: 40,
-      bounciness: 7,
-    }).start();
-
-  const iconScale = focus.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] });
-  const iconLift = focus.interpolate({ inputRange: [0, 1], outputRange: [0, -1.5] });
-  const labelOpacity = focus.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] });
-
+  color,
+}: {
+  source?: number;
+  label: string;
+  color: string;
+}) {
   return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityState={{ selected: focused }}
-      accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-      onLongPress={onLongPress}
-      onPressIn={() => pressTo(0.88)}
-      onPressOut={() => pressTo(1)}
-      style={[styles.item, { width }]}
-    >
-      <Animated.View style={[styles.itemInner, { transform: [{ scale: press }] }]}>
-        <Animated.View style={{ transform: [{ scale: iconScale }, { translateY: iconLift }] }}>
-          {icon}
-        </Animated.View>
-        <Animated.Text style={[styles.label, { opacity: labelOpacity }]} numberOfLines={1}>
-          {label}
-        </Animated.Text>
-      </Animated.View>
-    </Pressable>
+    <View style={styles.content}>
+      {source ? (
+        <Image source={source} resizeMode="contain" style={[styles.icon, { tintColor: color }]} />
+      ) : null}
+      <Animated.Text style={[styles.label, { color }]} numberOfLines={1}>
+        {label}
+      </Animated.Text>
+    </View>
   );
 }
 
-/**
- * Bagian navigation yang dipakai tab bar. Tipe resmi BottomTabBarProps di beberapa versi
- * tidak memuat `navigation`, padahal objeknya ada saat dijalankan, jadi dibaca lewat tipe
- * sendiri. Sumbernya: props.navigation, atau navigation milik layar di descriptors.
- */
-type TabNavigation = {
-  // Keduanya opsional: di beberapa versi objeknya tidak memuat salah satunya
-  emit?: (event: {
-    type: 'tabPress' | 'tabLongPress';
-    target: string;
-    canPreventDefault?: boolean;
-  }) => { defaultPrevented?: boolean } | undefined;
-  navigate?: (name: string, params?: object) => void;
+type TabItemProps = {
+  index: number;
+  width: number;
+  x: Animated.Value; // posisi pill (translateX)
+  lift: Animated.Value; // 0 = lepas, 1 = ditahan
+  selected: boolean;
+  label: string;
+  source?: number;
+  activeColor: string;
+  inactiveColor: string;
+  accessibilityLabel?: string;
+  onAccessibilityTap: () => void;
 };
 
-function getNavigation(props: TabBarProps, routeKey: string): TabNavigation | undefined {
-  const loose = props as unknown as {
-    navigation?: TabNavigation;
-    descriptors: Record<string, { navigation?: TabNavigation }>;
-  };
-  return loose.navigation ?? loose.descriptors[routeKey]?.navigation;
+function TabItem({
+  index,
+  width,
+  x,
+  lift,
+  selected,
+  label,
+  source,
+  activeColor,
+  inactiveColor,
+  accessibilityLabel,
+  onAccessibilityTap,
+}: TabItemProps) {
+  // 1 saat pill tepat di atas tab ini, 0 saat berjarak satu tab atau lebih
+  const proximity = x.interpolate({
+    inputRange: [(index - 1) * width, index * width, (index + 1) * width],
+    outputRange: [0, 1, 0],
+    extrapolate: 'clamp',
+  });
+  const inactiveOpacity = proximity.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+
+  // Ikon sedikit membesar di bawah pill, lalu tambahan "lensa" saat pill ditahan
+  const baseScale = proximity.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
+  const lensScale = Animated.multiply(proximity, lift).interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.07],
+  });
+
+  return (
+    <View
+      accessible
+      accessibilityRole="tab"
+      accessibilityState={{ selected }}
+      accessibilityLabel={accessibilityLabel ?? label}
+      onAccessibilityTap={onAccessibilityTap}
+      style={[styles.item, { width }]}
+    >
+      <Animated.View style={{ transform: [{ scale: baseScale }, { scale: lensScale }] }}>
+        {/* Lapisan abu (tidak aktif) */}
+        <Animated.View style={{ opacity: inactiveOpacity }}>
+          <TabContent source={source} label={label} color={inactiveColor} />
+        </Animated.View>
+
+        {/* Lapisan biru (aktif), muncul mengikuti pill */}
+        <Animated.View style={[styles.overlay, { opacity: proximity }]}>
+          <TabContent source={source} label={label} color={activeColor} />
+        </Animated.View>
+      </Animated.View>
+    </View>
+  );
 }
 
 function GlassTabBar(props: TabBarProps) {
+  const scheme = useColorScheme();
+  const C = PALETTES[scheme === 'dark' ? 'dark' : 'light'];
   const { state, descriptors } = props;
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -165,16 +184,59 @@ function GlassTabBar(props: TabBarProps) {
   const barWidth = width * 0.92;
   const sideGap = (width - barWidth) / 2;
   const bottom = insets.bottom + 16;
-
   const count = state.routes.length;
-  const itemWidth = (barWidth - BORDER * 2 - PAD * 2) / count;
+  const innerWidth = barWidth - PAD * 2;
+  const itemWidth = innerWidth / count;
+  const maxX = (count - 1) * itemWidth;
 
   const [x] = useState(() => new Animated.Value(state.index * itemWidth));
-  const [stretchX] = useState(() => new Animated.Value(1));
-  const [stretchY] = useState(() => new Animated.Value(1));
-  const previousIndex = useRef(state.index);
+  const [lift] = useState(() => new Animated.Value(0));
 
-  // Sembunyikan bar saat keyboard terbuka (pengganti tabBarHideOnKeyboard)
+  const pillScale = lift.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, LIFT_SCALE],
+  });
+
+  const select = (index: number) => {
+    const route = state.routes[index];
+    if (!route || state.index === index) return;
+
+    const nav = (props as unknown as {
+      navigation?: {
+        emit: (e: { type: string; target: string; canPreventDefault?: boolean }) => { defaultPrevented?: boolean };
+        navigate: (name: string, params?: object) => void;
+      };
+    }).navigation;
+
+    if (nav) {
+      const event = nav.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+      if (!event?.defaultPrevented) nav.navigate(route.name, route.params);
+    } else {
+      router.navigate(`/tabs/${route.name}` as Href); // cadangan
+    }
+  };
+
+  const setLift = (toValue: 0 | 1) =>
+    Animated.timing(lift, {
+      toValue,
+      duration: toValue ? 160 : 200,
+      easing: EASE,
+      useNativeDriver: true,
+    }).start();
+
+  const snapTo = (index: number) =>
+    Animated.timing(x, {
+      toValue: index * itemWidth,
+      duration: 220,
+      easing: EASE,
+      useNativeDriver: true,
+    }).start();
+
+  useEffect(() => {
+    snapTo(state.index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.index, itemWidth]);
+
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
     const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
@@ -184,99 +246,166 @@ function GlassTabBar(props: TabBarProps) {
     };
   }, []);
 
-  // Indikator kaca meluncur ke tab baru, sedikit memanjang lalu kembali (efek "cairan")
-  useEffect(() => {
-    Animated.spring(x, {
-      toValue: state.index * itemWidth,
-      useNativeDriver: true,
-      damping: 17,
-      stiffness: 170,
-      mass: 0.9,
-    }).start();
+  const latest = useRef({
+    itemWidth,
+    maxX,
+    count,
+    sideGap,
+    select,
+    snapTo,
+    setLift,
+    stateIndex: state.index,
+  });
+  latest.current = {
+    itemWidth,
+    maxX,
+    count,
+    sideGap,
+    select,
+    snapTo,
+    setLift,
+    stateIndex: state.index,
+  };
 
-    if (previousIndex.current !== state.index) {
-      previousIndex.current = state.index;
-      Haptics.selectionAsync().catch(() => {
-        // perangkat tanpa haptic: abaikan
-      });
+  const drag = useRef({ moved: false, lastIndex: -1, lastX: 0 });
 
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(stretchX, { toValue: 1.16, duration: 110, useNativeDriver: true }),
-          Animated.timing(stretchY, { toValue: 0.93, duration: 110, useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.spring(stretchX, { toValue: 1, damping: 10, stiffness: 220, useNativeDriver: true }),
-          Animated.spring(stretchY, { toValue: 1, damping: 10, stiffness: 220, useNativeDriver: true }),
-        ]),
-      ]).start();
-    }
-  }, [state.index, itemWidth, x, stretchX, stretchY]);
+  const touchToLocalX = (pageX: number) => pageX - latest.current.sideGap - PAD;
+  const indexAt = (localX: number) =>
+    clamp(Math.floor(localX / latest.current.itemWidth), 0, latest.current.count - 1);
+
+  const [pan] = useState(() =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
+
+      onPanResponderGrant: (_e, g) => {
+        const l = latest.current;
+        const idx = indexAt(touchToLocalX(g.x0));
+        drag.current = { moved: false, lastIndex: idx, lastX: g.x0 };
+        l.setLift(1);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
+        l.snapTo(idx);
+      },
+
+      onPanResponderMove: (_e, g) => {
+        const l = latest.current;
+        drag.current.lastX = g.moveX;
+        const localX = touchToLocalX(g.moveX);
+
+        if (!drag.current.moved && Math.abs(g.dx) > 4) {
+          drag.current.moved = true;
+          x.stopAnimation();
+        }
+
+        if (drag.current.moved) {
+          x.setValue(clamp(localX - l.itemWidth / 2, 0, l.maxX));
+        }
+
+        const idx = indexAt(localX);
+        if (idx !== drag.current.lastIndex) {
+          drag.current.lastIndex = idx;
+          Haptics.selectionAsync().catch(() => { });
+        }
+      },
+
+      onPanResponderRelease: () => {
+        const l = latest.current;
+        const idx = indexAt(touchToLocalX(drag.current.lastX));
+        l.setLift(0);
+        l.snapTo(idx);
+        requestAnimationFrame(() => l.select(idx));
+      },
+
+      onPanResponderTerminate: () => {
+        const l = latest.current;
+        l.setLift(0);
+        l.snapTo(l.stateIndex);
+      },
+    })
+  );
 
   if (keyboardOpen) return null;
 
   return (
     <View style={[styles.bar, { left: sideGap, bottom, width: barWidth }]}>
-      {/* Permukaan kaca: kilau atas + garis cahaya di tepi atas */}
-      <Sheen id="barSheen" strength={0.22} reach={0.55} />
-      <View pointerEvents="none" style={styles.topEdge} />
+      {/* Permukaan kaca bar */}
+      <View
+        pointerEvents="none"
+        style={[styles.glass, { backgroundColor: C.glass, borderColor: C.glassBorder }]}
+      >
+        <Sheen id="barSheen" top={0.24} reach={0.55} bottom={0.06} />
+        <View style={[styles.topEdge, { backgroundColor: C.topEdge }]} />
+      </View>
 
-      {/* Indikator kaca untuk tab aktif */}
+      {/* Pill kaca */}
       <Animated.View
         pointerEvents="none"
         style={[
           styles.pill,
           {
             width: itemWidth,
-            transform: [{ translateX: x }, { scaleX: stretchX }, { scaleY: stretchY }],
+            backgroundColor: C.pill,
+            borderColor: 'transparent',
+            transform: [{ translateX: x }, { scale: pillScale }],
           },
         ]}
       >
-        <Sheen id="pillSheen" strength={0.38} reach={0.9} />
+        <Sheen id="pillSheen" top={0.4} reach={0.9} bottom={0.08} />
+
+        {/* Efek kaca: hanya terlihat saat ditahan / digeser */}
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: lift }]}>
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: C.pillLift }]} />
+          <Svg style={StyleSheet.absoluteFill}>
+            <Defs>
+              {/* Lensa: terang di bagian atas, memudar ke bawah */}
+              <RadialGradient id="lens" cx="50%" cy="22%" rx="85%" ry="95%">
+                <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.55} />
+                <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0.16} />
+                <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0.04} />
+              </RadialGradient>
+              {/* Pantulan cahaya di dasar kapsul */}
+              <LinearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0.65" stopColor="#FFFFFF" stopOpacity={0} />
+                <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0.26} />
+              </LinearGradient>
+              {/* Kilau diagonal tipis (refleksi permukaan kaca) */}
+              <LinearGradient id="glint" x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.28} />
+                <Stop offset="0.35" stopColor="#FFFFFF" stopOpacity={0} />
+                <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+              </LinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#lens)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#glint)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#floor)" />
+          </Svg>
+          {/* Rim: atas terang, bawah redup, seperti tepi kaca yang membiaskan cahaya */}
+          <View style={styles.rim} />
+          <View style={styles.pillTopEdge} />
+        </Animated.View>
       </Animated.View>
 
-      <View style={styles.row}>
+      {/* Baris ikon: satu area sentuh untuk tap + tahan + geser */}
+      <View style={styles.row} {...pan.panHandlers}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
-          const focused = state.index === index;
           const label = typeof options.title === 'string' ? options.title : route.name;
-
-          const onPress = () => {
-            const navigation = getNavigation(props, route.key);
-
-            // Beri tahu navigator bahwa tab ditekan (jika fungsinya tersedia)
-            const event =
-              typeof navigation?.emit === 'function'
-                ? navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true })
-                : undefined;
-
-            if (focused || event?.defaultPrevented) return;
-
-            if (typeof navigation?.navigate === 'function') {
-              navigation.navigate(route.name, route.params);
-            } else {
-              // Cadangan terakhir: pindah lewat router. Folder tab Anda bernama "tabs".
-              router.navigate(`/tabs/${route.name}` as Href);
-            }
-          };
-
-          const onLongPress = () => {
-            const navigation = getNavigation(props, route.key);
-            if (typeof navigation?.emit === 'function') {
-              navigation.emit({ type: 'tabLongPress', target: route.key });
-            }
-          };
 
           return (
             <TabItem
               key={route.key}
+              index={index}
               width={itemWidth}
-              focused={focused}
+              x={x}
+              lift={lift}
+              selected={state.index === index}
               label={label}
-              icon={options.tabBarIcon?.({ focused, color: COLORS.icon, size: 26 })}
+              source={ICONS[route.name]}
+              activeColor={C.active}
+              inactiveColor={C.inactive}
               accessibilityLabel={options.tabBarAccessibilityLabel}
-              onPress={onPress}
-              onLongPress={onLongPress}
+              onAccessibilityTap={() => select(index)}
             />
           );
         })}
@@ -291,47 +420,13 @@ export default function AppTabs() {
   return (
     <Tabs
       tabBar={(props) => <GlassTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ headerShown: false, lazy: false }}
     >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: t('tab.home'),
-          tabBarIcon: ({ focused }) => <TabIcon source={ICONS.home} focused={focused} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="itinerary"
-        options={{
-          title: t('tab.itinerary'),
-          tabBarIcon: ({ focused }) => <TabIcon source={ICONS.explore} focused={focused} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="wishlist"
-        options={{
-          title: t('tab.wishlist'),
-          tabBarIcon: ({ focused }) => <TabIcon source={ICONS.wishlist} focused={focused} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="chatbot"
-        options={{
-          title: t('tab.chatbot'),
-          tabBarIcon: ({ focused }) => <TabIcon source={ICONS.chatbot} focused={focused} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: t('tab.profile'),
-          tabBarIcon: ({ focused }) => <TabIcon source={ICONS.profile} focused={focused} />,
-        }}
-      />
+      <Tabs.Screen name="home" options={{ title: t('tab.home') }} />
+      <Tabs.Screen name="itinerary" options={{ title: t('tab.itinerary') }} />
+      <Tabs.Screen name="wishlist" options={{ title: t('tab.wishlist') }} />
+      <Tabs.Screen name="chatbot" options={{ title: t('tab.chatbot') }} />
+      <Tabs.Screen name="profile" options={{ title: t('tab.profile') }} />
     </Tabs>
   );
 }
@@ -340,30 +435,45 @@ const styles = StyleSheet.create({
   bar: {
     position: 'absolute',
     height: BAR_HEIGHT,
+  },
+  glass: {
+    ...StyleSheet.absoluteFill,
     borderRadius: BAR_RADIUS,
-    borderWidth: BORDER,
-    borderColor: COLORS.glassBorder,
-    backgroundColor: COLORS.glass,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   topEdge: {
     position: 'absolute',
     top: 0,
-    left: 18,
-    right: 18,
+    left: BAR_RADIUS * 0.6,
+    right: BAR_RADIUS * 0.6,
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
   pill: {
     position: 'absolute',
     top: PAD,
     left: PAD,
-    height: BAR_HEIGHT - BORDER * 2 - PAD * 2,
-    borderRadius: BAR_RADIUS - PAD,
+    height: BAR_HEIGHT - PAD * 2,
+    borderRadius: (BAR_HEIGHT - PAD * 2) / 2,
     borderWidth: 1,
-    borderColor: COLORS.pillBorder,
-    backgroundColor: COLORS.pill,
     overflow: 'hidden',
+  },
+  rim: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: (BAR_HEIGHT - PAD * 2) / 2,
+    borderWidth: 1.5,
+    borderTopColor: 'rgba(255, 255, 255, 0.9)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.45)',
+    borderRightColor: 'rgba(255, 255, 255, 0.45)',
+    borderBottomColor: 'rgba(120, 120, 128, 0.20)',
+  },
+  pillTopEdge: {
+    position: 'absolute',
+    top: 1,
+    left: 16,
+    right: 16,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
   },
   row: {
     flex: 1,
@@ -375,18 +485,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  itemInner: {
+  content: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
   icon: {
     width: 26,
     height: 26,
-    tintColor: COLORS.icon,
   },
   label: {
     marginTop: 3,
-    color: COLORS.icon,
     fontSize: 11,
     fontWeight: '700',
   },

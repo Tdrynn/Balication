@@ -87,8 +87,6 @@ export function WeatherCard({ weather, regency, auto, onSelect, onLocate }: Prop
     );
 
     if (!ready) {
-        // Pesan error teknis dari API tidak diterjemahkan: tampilkan pesan umum yang
-        // mengikuti bahasa aplikasi, dan sertakan pesan aslinya hanya saat pengembangan.
         const message =
             __DEV__ && error
                 ? `${t('weather.unavailable')} (${error})`
@@ -120,7 +118,7 @@ export function WeatherCard({ weather, regency, auto, onSelect, onLocate }: Prop
     const wind = Number.isFinite(data.windSpeed)
         ? t('weather.wind', { value: Math.round(data.windSpeed) })
         : '-';
-    const updated = data.time.slice(11, 16); // "HH:mm"
+    const updated = data.time.slice(11, 16);
 
     return (
         <>

@@ -58,7 +58,6 @@ export default function ChatbotScreen() {
     };
   }, []);
 
-  // Saat keyboard terbuka, navbar tersembunyi, jadi ruang bawah tidak perlu besar
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -70,8 +69,6 @@ export default function ChatbotScreen() {
     };
   }, []);
 
-  // Tinggi navbar mengambang (lihat app-tabs.android.tsx): jarak 16 + tinggi 70, ditambah ruang napas.
-  // Ubah angka 98 bila bar Anda berbeda.
   const bottomSpace = keyboardOpen ? 8 : insets.bottom + 98;
 
   const source = Image.resolveAssetSource(ORNAMENT);
@@ -257,11 +254,6 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: SIDE,
     paddingBottom: 12,
-  },
-  logo: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
   },
   brand: {
     color: HOME.title,

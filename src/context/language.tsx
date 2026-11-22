@@ -23,17 +23,14 @@ type Params = Record<string, string | number>;
 
 type LanguageContextValue = {
     language: Language;
-    /** false selama pilihan tersimpan masih dibaca */
     loaded: boolean;
     setLanguage: (language: Language) => void;
-    /** t('profile.title')  atau  t('home.hello', { name: 'Antony' }) untuk teks "Halo, {name}" */
     t: (key: TranslationKey, params?: Params) => string;
 };
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-    // Awalnya bahasa HP. Pilihan pengguna (jika pernah memilih) menggantikannya setelah dibaca.
     const [language, setLanguageState] = useState<Language>(deviceLanguage);
     const [loaded, setLoaded] = useState(false);
 
@@ -64,9 +61,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
     const setLanguage = useCallback((next: Language) => {
         setLanguageState(next);
-        // Disimpan hanya saat pengguna memilih sendiri. Sebelum itu, bahasa selalu mengikuti HP.
         AsyncStorage.setItem(STORAGE_KEY, next).catch(() => {
-            // tidak fatal: pilihan hanya tidak diingat
+            
         });
     }, []);
 
