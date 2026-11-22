@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/images/icon.png" height="100" width="100" alt="Balication">
+  <img src="assets/images/icon.png" height="150" width="100" alt="Balication">
 </div>
 
 # Balication
