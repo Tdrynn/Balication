@@ -14,9 +14,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FilterToggle, animateLayout } from '@/components/search/filter-toggle';
 import { OptionSheet } from '@/components/search/option-sheet';
 import { ResultCard } from '@/components/search/result-card';
 import { HOME, SIDE } from '@/components/home/home-theme';
+import { useLanguage } from '@/context/language';
 import { useRemote } from '@/hooks/use-remote';
 import {
     KINDS,
@@ -27,6 +29,8 @@ import {
     type Option,
 } from '@/lib/destinations';
 import { REGENCIES } from '@/lib/regencies';
+import { regencyLabel } from '@/lib/regency-label';
+import type { TranslationKey } from '@/lib/translations';
 import { useWishlist } from '@/lib/wishlist-store';
 
 type KindFilter = 'All' | Kind;
@@ -34,6 +38,12 @@ type SheetName = 'category' | 'location' | 'price' | 'rating' | null;
 
 const ANY = 'any';
 const KIND_CHIPS: KindFilter[] = ['All', ...KINDS];
+const KIND_KEYS: Record<KindFilter, TranslationKey> = {
+    All: 'filter.all',
+    Destination: 'kind.destination',
+    Activity: 'kind.activity',
+    Accommodation: 'kind.accommodation',
+};
 
 function FilterPill({
     label,
@@ -65,6 +75,7 @@ function FilterPill({
 export default function SearchScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const { t } = useLanguage();
     const wishlist = useWishlist();
     const params = useLocalSearchParams<{ type?: string }>();
 
@@ -77,19 +88,23 @@ export default function SearchScreen() {
     const [priceId, setPriceId] = useState(ANY);
     const [ratingId, setRatingId] = useState(ANY);
     const [sheet, setSheet] = useState<SheetName>(null);
+    // Panel filter disembunyikan dulu supaya layar tidak ramai; lencana menunjukkan filter aktif
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
     const destinations = useRemote(fetchDestinations);
     const all = destinations.data ?? [];
 
     // Pilihan kategori diambil dari data yang ada
     const categoryOptions: Option[] = [
-        { id: ANY, label: 'Any category' },
+        { id: ANY, label: t('filter.anyCategory') },
         ...[...new Set(all.map((d) => d.category))].map((c) => ({ id: c, label: c })),
     ];
     const locationOptions: Option[] = [
-        { id: ANY, label: 'All locations' },
-        ...REGENCIES.map((r) => ({ id: r.id, label: r.label })),
+        { id: ANY, label: t('filter.allLocations') },
+        ...REGENCIES.map((r) => ({ id: r.id, label: regencyLabel(r, t) })),
     ];
+    const priceOptions: Option[] = PRICE_OPTIONS.map((o) => ({ id: o.id, label: t(o.labelKey) }));
+    const ratingOptions: Option[] = RATING_OPTIONS.map((o) => ({ id: o.id, label: t(o.labelKey) }));
 
     const labelOf = (options: Option[], id: string, fallback: string) =>
         id === ANY ? fallback : (options.find((o) => o.id === id)?.label ?? fallback);
@@ -112,8 +127,19 @@ export default function SearchScreen() {
             .includes(text);
     });
 
-    const filtersActive =
-        category !== ANY || regencyId !== ANY || priceId !== ANY || ratingId !== ANY || kind !== 'All';
+    const activeCount = [
+        kind !== 'All',
+        category !== ANY,
+        regencyId !== ANY,
+        priceId !== ANY,
+        ratingId !== ANY,
+    ].filter(Boolean).length;
+    const filtersActive = activeCount > 0;
+
+    const toggleFilters = () => {
+        animateLayout();
+        setFiltersOpen((open) => !open);
+    };
 
     const reset = () => {
         setKind('All');
@@ -128,26 +154,26 @@ export default function SearchScreen() {
         { title: string; options: Option[]; selectedId: string; onSelect: (id: string) => void }
     > = {
         category: {
-            title: 'Category',
+            title: t('filter.category'),
             options: categoryOptions,
             selectedId: category,
             onSelect: setCategory,
         },
         location: {
-            title: 'Location',
+            title: t('filter.location'),
             options: locationOptions,
             selectedId: regencyId,
             onSelect: setRegencyId,
         },
         price: {
-            title: 'Price range',
-            options: PRICE_OPTIONS,
+            title: t('filter.priceRange'),
+            options: priceOptions,
             selectedId: priceId,
             onSelect: setPriceId,
         },
         rating: {
-            title: 'Rating',
-            options: RATING_OPTIONS,
+            title: t('filter.rating'),
+            options: ratingOptions,
             selectedId: ratingId,
             onSelect: setRatingId,
         },
@@ -159,7 +185,7 @@ export default function SearchScreen() {
 
     const header = (
         <Text style={styles.count}>
-            {results.length} {results.length === 1 ? 'Result' : 'Results'} Found
+            {t(results.length === 1 ? 'search.count.one' : 'search.count.other', { count: results.length })}
         </Text>
     );
 
@@ -172,13 +198,13 @@ export default function SearchScreen() {
                 <View style={styles.titleRow}>
                     <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel="Kembali"
+                        accessibilityLabel={t('common.back')}
                         hitSlop={10}
                         onPress={() => router.back()}
                     >
                         <Ionicons name="chevron-back" size={28} color={HOME.title} />
                     </Pressable>
-                    <Text style={styles.title}>Search</Text>
+                    <Text style={styles.title}>{t('search.title')}</Text>
                 </View>
 
                 <View style={styles.search}>
@@ -187,7 +213,7 @@ export default function SearchScreen() {
                         value={query}
                         onChangeText={setQuery}
                         autoFocus={!params.type}
-                        placeholder="find destinations, accommodation and activities..."
+                        placeholder={t('home.search.placeholder')}
                         placeholderTextColor={HOME.muted}
                         returnKeyType="search"
                         autoCorrect={false}
@@ -196,7 +222,7 @@ export default function SearchScreen() {
                     {query ? (
                         <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel="Hapus teks"
+                            accessibilityLabel={t('search.clear')}
                             hitSlop={10}
                             onPress={() => setQuery('')}
                         >
@@ -205,58 +231,77 @@ export default function SearchScreen() {
                     ) : null}
                 </View>
 
-                {/* Jenis */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    contentContainerStyle={styles.row}
-                >
-                    {KIND_CHIPS.map((item) => {
-                        const selected = item === kind;
-                        return (
-                            <Pressable
-                                key={item}
-                                accessibilityRole="button"
-                                accessibilityState={{ selected }}
-                                onPress={() => setKind(item)}
-                                style={[styles.kind, selected && styles.kindActive]}
-                            >
-                                <Text style={[styles.kindText, selected && styles.kindTextActive]}>{item}</Text>
+                {/* Tombol Filter: menampilkan / menyembunyikan panel di bawahnya */}
+                <FilterToggle
+                    open={filtersOpen}
+                    onToggle={toggleFilters}
+                    activeCount={activeCount}
+                    trailing={
+                        filtersActive ? (
+                            <Pressable onPress={reset} accessibilityRole="button" hitSlop={8}>
+                                <Text style={styles.link}>{t('filter.reset')}</Text>
                             </Pressable>
-                        );
-                    })}
-                </ScrollView>
+                        ) : null
+                    }
+                />
 
-                {/* Filter */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    contentContainerStyle={styles.row}
-                >
-                    <FilterPill
-                        icon="options-outline"
-                        label={labelOf(categoryOptions, category, 'Filter')}
-                        active={category !== ANY}
-                        onPress={() => setSheet('category')}
-                    />
-                    <FilterPill
-                        label={labelOf(locationOptions, regencyId, 'Location')}
-                        active={regencyId !== ANY}
-                        onPress={() => setSheet('location')}
-                    />
-                    <FilterPill
-                        label={labelOf(PRICE_OPTIONS, priceId, 'Price Range')}
-                        active={priceId !== ANY}
-                        onPress={() => setSheet('price')}
-                    />
-                    <FilterPill
-                        label={labelOf(RATING_OPTIONS, ratingId, 'Rating')}
-                        active={ratingId !== ANY}
-                        onPress={() => setSheet('rating')}
-                    />
-                </ScrollView>
+                {filtersOpen ? (
+                    <>
+                        {/* Jenis */}
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            contentContainerStyle={styles.row}
+                        >
+                            {KIND_CHIPS.map((item) => {
+                                const selected = item === kind;
+                                return (
+                                    <Pressable
+                                        key={item}
+                                        accessibilityRole="button"
+                                        accessibilityState={{ selected }}
+                                        onPress={() => setKind(item)}
+                                        style={[styles.kind, selected && styles.kindActive]}
+                                    >
+                                        <Text style={[styles.kindText, selected && styles.kindTextActive]}>
+                                            {t(KIND_KEYS[item])}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </ScrollView>
+
+                        {/* Filter */}
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            contentContainerStyle={styles.row}
+                        >
+                            <FilterPill
+                                label={labelOf(categoryOptions, category, t('filter.category'))}
+                                active={category !== ANY}
+                                onPress={() => setSheet('category')}
+                            />
+                            <FilterPill
+                                label={labelOf(locationOptions, regencyId, t('filter.location'))}
+                                active={regencyId !== ANY}
+                                onPress={() => setSheet('location')}
+                            />
+                            <FilterPill
+                                label={labelOf(priceOptions, priceId, t('filter.priceRange'))}
+                                active={priceId !== ANY}
+                                onPress={() => setSheet('price')}
+                            />
+                            <FilterPill
+                                label={labelOf(ratingOptions, ratingId, t('filter.rating'))}
+                                active={ratingId !== ANY}
+                                onPress={() => setSheet('rating')}
+                            />
+                        </ScrollView>
+                    </>
+                ) : null}
             </View>
 
             {/* Hasil */}
@@ -266,9 +311,11 @@ export default function SearchScreen() {
                 </View>
             ) : destinations.error && !destinations.data ? (
                 <View style={styles.state}>
-                    <Text style={styles.errorText}>{destinations.error}</Text>
+                    <Text style={styles.errorText}>
+                        {__DEV__ ? `${t('common.loadError')} (${destinations.error})` : t('common.loadError')}
+                    </Text>
                     <Pressable onPress={destinations.reload} accessibilityRole="button" hitSlop={8}>
-                        <Text style={styles.link}>Coba lagi</Text>
+                        <Text style={styles.link}>{t('common.retry')}</Text>
                     </Pressable>
                 </View>
             ) : (
@@ -281,20 +328,13 @@ export default function SearchScreen() {
                     ListHeaderComponent={
                         <View style={styles.countRow}>
                             {header}
-                            {filtersActive ? (
-                                <Pressable onPress={reset} accessibilityRole="button" hitSlop={8}>
-                                    <Text style={styles.link}>Reset filter</Text>
-                                </Pressable>
-                            ) : null}
                         </View>
                     }
                     ListEmptyComponent={
                         <View style={styles.empty}>
                             <Ionicons name="search-outline" size={40} color={HOME.muted} />
-                            <Text style={styles.emptyTitle}>No results</Text>
-                            <Text style={styles.emptyText}>
-                                Try a different keyword or loosen the filters.
-                            </Text>
+                            <Text style={styles.emptyTitle}>{t('search.empty.title')}</Text>
+                            <Text style={styles.emptyText}>{t('search.empty.text')}</Text>
                         </View>
                     }
                     ItemSeparatorComponent={() => <View style={styles.separator} />}

@@ -6,7 +6,7 @@ import { useLanguage } from '@/context/language';
 
 export default function AppTabs() {
   const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const colors = Colors['light'];
   const { t } = useLanguage();
 
   return (

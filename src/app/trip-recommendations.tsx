@@ -37,7 +37,6 @@ const KIND_KEYS: Record<Kind, TranslationKey> = {
 
 const IMAGE_SIZE = 92;
 
-/** Layar 2 dari 2: pilih destinasi (sudah tercentang otomatis) lalu buat itinerary. */
 export default function TripRecommendationsScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -47,7 +46,6 @@ export default function TripRecommendationsScreen() {
     const { data, loading, error, reload } = useRemote(fetchDestinations);
 
     const [kind, setKind] = useState<Kind>('Destination');
-    // null = belum ada perubahan dari pengguna, pakai pilihan otomatis
     const [picked, setPicked] = useState<string[] | null>(null);
 
     const list = data ? candidates(data, draft) : [];

@@ -16,10 +16,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HOME, SIDE } from '@/components/home/home-theme';
-import { OptionSheet } from '@/components/search/option-sheet';
+import { AccountDialog } from '@/components/profile/account-dialog';
+import { Avatar } from '@/components/profile/avatar';
+import { AvatarDialog } from '@/components/profile/avatar-dialog';
+import { LanguageDialog } from '@/components/profile/language-dialog';
 import { useAuth } from '@/context/auth';
 import { useLanguage } from '@/context/language';
-import { LANGUAGES, type Language } from '@/lib/translations';
+import { LANGUAGES } from '@/lib/translations';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -62,13 +65,14 @@ function MenuRow({ item, onPress }: { item: MenuItem; onPress: () => void }) {
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { account, signOut } = useAuth();
+  const { account, signOut, updateAccount } = useAuth();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
-  const { t, language, setLanguage } = useLanguage();
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const { t, language } = useLanguage();
   const router = useRouter();
 
-  // Teks menu dibuat di dalam komponen supaya ikut berganti saat bahasa diubah
   const currentLanguage = LANGUAGES.find((l) => l.code === language)?.label ?? '';
   const menu: MenuItem[] = [
     {
@@ -111,9 +115,6 @@ export default function ProfileScreen() {
   ];
 
   const name = account?.name?.trim() || 'Traveler';
-  const initial = name.charAt(0).toUpperCase();
-
-  // Ornamen selebar layar; tinggi dari rasio gambar agar tidak ter-zoom
   const source = Image.resolveAssetSource(ORNAMENT);
   const sw = source?.width;
   const sh = source?.height;
@@ -132,7 +133,11 @@ export default function ProfileScreen() {
       setLanguageOpen(true);
       return;
     }
-    // TODO: buka halaman Account Information, Notifications, dan Chat Preferences
+    if (key === 'account') {
+      setAccountOpen(true);
+      return;
+    }
+    // TODO: buka halaman Notifications dan Chat Preferences
   };
 
   const confirmLogout = async () => {
@@ -154,7 +159,6 @@ export default function ProfileScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        // flexGrow: 1 membuat isi setidaknya setinggi layar, sehingga bagian tengah bisa memusatkan kartu
         contentContainerStyle={{
           flexGrow: 1,
           paddingTop: insets.top + 12,
@@ -166,18 +170,16 @@ export default function ProfileScreen() {
           <Text style={styles.headerTitle}>{t('profile.title')}</Text>
         </View>
 
-        {/* Sisa ruang di bawah header: kartu dipusatkan secara vertikal di sini */}
         <View style={styles.center}>
           <View style={styles.card}>
             <View style={styles.avatarWrap}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initial}</Text>
+                <Avatar avatarId={account?.avatar} name={name} size={70} />
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Ubah foto profil"
-                // TODO: pilih foto dengan expo-image-picker
-                onPress={() => { }}
+                accessibilityLabel={t('avatar.edit')}
+                onPress={() => setAvatarOpen(true)}
                 style={styles.editBadge}
               >
                 <Ionicons name="pencil" size={12} color="#FFFFFF" />
@@ -195,7 +197,7 @@ export default function ProfileScreen() {
           </View>
 
           <Text style={styles.platform}>
-            Balication • {Platform.OS === 'ios' ? 'iOS' : 'Android'} {String(Platform.Version)}
+            Balication • PBL5D2
           </Text>
         </View>
       </ScrollView>
@@ -210,7 +212,7 @@ export default function ProfileScreen() {
       >
         <View style={styles.overlay}>
           <Pressable
-            accessibilityLabel="Tutup"
+            accessibilityLabel={t('common.close')}
             style={StyleSheet.absoluteFill}
             onPress={() => setConfirmOpen(false)}
           />
@@ -247,14 +249,21 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Pilihan bahasa */}
-      <OptionSheet
-        visible={languageOpen}
-        title={t('language.sheetTitle')}
-        options={LANGUAGES.map((l) => ({ id: l.code, label: l.label }))}
-        selectedId={language}
-        onSelect={(code) => setLanguage(code as Language)}
-        onClose={() => setLanguageOpen(false)}
+      {/* Dialog: bahasa, informasi akun, foto profil */}
+      <LanguageDialog visible={languageOpen} onClose={() => setLanguageOpen(false)} />
+      <AccountDialog
+        visible={accountOpen}
+        onClose={() => setAccountOpen(false)}
+        name={account?.name ?? ''}
+        email={account?.email ?? ''}
+        onSave={(next) => updateAccount({ name: next })}
+      />
+      <AvatarDialog
+        visible={avatarOpen}
+        onClose={() => setAvatarOpen(false)}
+        name={name}
+        current={account?.avatar ?? ''}
+        onSave={(id) => updateAccount({ avatar: id })}
       />
     </View>
   );
@@ -280,11 +289,6 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: SIDE,
     marginBottom: 14,
-  },
-  logo: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
   },
   headerTitle: {
     color: HOME.title,
@@ -313,16 +317,10 @@ const styles = StyleSheet.create({
     width: 78,
     height: 78,
     borderRadius: 39,
-    backgroundColor: HOME.primary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
     borderColor: '#DCEAE7',
-  },
-  avatarText: {
-    color: '#FFFFFF',
-    fontSize: 32,
-    fontWeight: '800',
   },
   editBadge: {
     position: 'absolute',
@@ -349,7 +347,7 @@ const styles = StyleSheet.create({
   },
   menu: {
     alignSelf: 'stretch',
-    gap: 12,
+    gap: 8,
     marginTop: 22,
   },
   row: {
@@ -385,7 +383,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   platform: {
-    marginTop: 18,
+    marginTop: 8,
     textAlign: 'center',
     color: HOME.muted,
     fontSize: 11,
