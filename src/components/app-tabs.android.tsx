@@ -174,7 +174,7 @@ function TabItem({
 
 function GlassTabBar(props: TabBarProps) {
   const scheme = useColorScheme();
-  const C = PALETTES[scheme === 'dark' ? 'dark' : 'light'];
+  const C = PALETTES['light'];
   const { state, descriptors } = props;
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -234,7 +234,6 @@ function GlassTabBar(props: TabBarProps) {
 
   useEffect(() => {
     snapTo(state.index);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.index, itemWidth]);
 
   useEffect(() => {

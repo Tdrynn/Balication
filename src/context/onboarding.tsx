@@ -9,7 +9,7 @@ import {
     type ReactNode,
 } from 'react'
 
-const STORAGE_KEY = 'onboarding_done_v2';
+const STORAGE_KEY = 'onboarding_done_v3';
 
 type OnboardingState = {
     loaded: boolean;
